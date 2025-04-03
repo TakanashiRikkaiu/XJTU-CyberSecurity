@@ -1,8 +1,7 @@
 
 
 <!-- ABOUT THE PROJECT -->
-## About The Project
-
+## 关于此项目
 西安交通大学2023级网络空间安全专业本科生课程资料分享
 
 
