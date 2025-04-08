@@ -1,0 +1,59 @@
+#include <iostream>
+#include <string>
+#include <cmath>
+#include <vector>
+#include <algorithm>
+
+using namespace std;
+
+
+
+void WeightMedian(int length, vector<int> num, vector<double> weight, int index) {
+    if (length == 1) {
+        cout << num[index];
+        return;
+    }
+
+
+    int low = index, high = length + index - 1;
+    int temp = rand() % (length - 1) + index + 1;   
+    swap(num[low], num[temp]);
+    swap(weight[low], weight[temp]);
+    int pivot = num[low];
+    double pivot_w = weight[low];
+    while (low < high) {
+        while (low < high && num[high] > pivot)
+            --high;
+        num[low] = num[high];
+        weight[low] = weight[high];
+        while (low < high && num[low] <= pivot)
+            ++low;
+        num[high] = num[low];
+        weight[high] = weight[low];
+    }
+    num[low] = pivot;
+    weight[low] = pivot_w;
+
+
+    double left_weight = 0, right_weight = 0;
+    for (int i = index; i < low; i++)
+        left_weight += weight[i];
+    for (int i = low + 1; i < length + index; i++)
+        right_weight += weight[i];
+
+    
+    if (left_weight <= 0.5 && right_weight <= 0.5)
+        cout << num[low];
+    else if (left_weight > right_weight) {
+        weight[low] += right_weight;
+        WeightMedian(low - index + 1, num, weight, index);
+    } else {
+        weight[low] += left_weight;
+        WeightMedian(length - low + index, num, weight, low);
+    }
+}
+
+
+
+
+
