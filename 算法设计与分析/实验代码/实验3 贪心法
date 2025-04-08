@@ -1,0 +1,62 @@
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <cmath>
+#include <vector>
+#include <algorithm>
+using namespace std;
+
+
+struct Node {
+    float weight;           
+    int parent_id;          
+    int num;                
+    float max_road = 0;     
+    bool cut = false;       
+};
+
+class dTree {
+    public:
+        dTree(int a, int b) : n(a), d(b) {
+
+            node = new Node[n];
+            node[0].parent_id = -1;
+            node[0].weight = 0;
+            for (int i = 0; i < n; i++) {
+                cin >> node[i].num;
+                for (int j = 0; j < node[i].num; j++) {
+                    int index;
+                    cin >> index;
+                    cin >> node[index].weight;
+                    node[index].parent_id = i;
+                }
+            }
+        }
+        ~dTree(void) {
+            delete[] node;
+        }
+        void solution(void) {
+ 
+            int count = 0;
+            for (int i = n - 1; i >= 0; i--) {
+                if (node[i].max_road > d) {
+          
+                    node[i].cut = true;
+                    count++;
+                } else {
+                   
+                    int par = node[i].parent_id;
+                    if (par >= 0 && node[par].max_road < node[i].max_road + node[i].weight)
+                        node[par].max_road = node[i].max_road + node[i].weight;
+                }
+            }
+            cout << count;
+        }
+    private:
+        int n;          
+        int d;          
+        Node *node;     
+};
+
+
+
