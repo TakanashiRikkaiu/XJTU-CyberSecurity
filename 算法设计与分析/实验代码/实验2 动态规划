@@ -1,0 +1,38 @@
+void MinCost(int L, int n, int *p) {
+   
+    if (n == 0) {
+        cout << 0 << endl;
+        return;
+    }
+
+
+    const long long INF = 1e18; 
+
+ 
+    vector<int> points(n+2);
+    for(int i = 0; i < n+2; i++) {
+        points[i] = p[i]; 
+    }
+    
+    
+    sort(points.begin() + 1, points.end() - 1); 
+    
+    
+    vector<vector<long long>> dp(n+2, vector<long long>(n+2, 0));
+    
+   
+    for(int l = 2; l <= n+1; l++) {
+        for(int i = 0; i + l <= n+1; i++) {
+            int j = i + l;
+            dp[i][j] = INF;
+            
+            
+            for(int k = i + 1; k < j; k++) {
+                long long cost = dp[i][k] + dp[k][j] + (points[j] - points[i]);
+                dp[i][j] = min(dp[i][j], cost);
+            }
+        }
+    }
+    
+    cout << dp[0][n+1] << endl;
+}
