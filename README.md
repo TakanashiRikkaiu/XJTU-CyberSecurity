@@ -13,7 +13,7 @@
 ![image-20230503173018387](https://pbs.twimg.com/media/Fa1WTaiaAAA3V-1?format=jpg&name=4096x4096)
 
 
-![20241103_2](https://github.com/user-attachments/assets/d585dcab-8d8a-4e93-8c82-5c13771d2e3f)
+![image](https://github.com/user-attachments/assets/18a030f3-7011-4685-9edf-7e1328b85d94)
 
 
 
