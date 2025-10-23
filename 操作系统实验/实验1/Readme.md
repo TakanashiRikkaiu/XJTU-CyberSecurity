@@ -68,6 +68,8 @@ int main()
     return 0;
 }
 pid改
+<img width="1455" height="317" alt="image" src="https://github.com/user-attachments/assets/7ae545c1-58a6-4562-bf4d-ccef3ea02a46" />
+
 初步想法运行几十次获得统计性的一般规律，限于篇幅仅运行10次，可以得到结果规律如下：
 ？？？？？？？？？？？？？？？/
 
@@ -78,6 +80,7 @@ pid改
 
 去除wait的结果：
 pid1改图片
+<img width="1476" height="282" alt="image" src="https://github.com/user-attachments/assets/9c1ab1ef-8303-4083-8cb5-979be170ef3e" />
 
 按照此逻辑，如果使用了wait且包含了头文件，应该是成功调用函数，父等子结束。
 结果分析：
@@ -121,6 +124,7 @@ int main()
 
 
 图片：
+<img width="585" height="176" alt="image" src="https://github.com/user-attachments/assets/7c5d1165-f78a-4962-a23f-b0ccbba0ce45" />
 
 
 
@@ -163,15 +167,27 @@ int main()
 
 可得
 gl图片
+<img width="880" height="201" alt="image" src="https://github.com/user-attachments/assets/2bb70819-7433-43b9-929d-4b2aaca9595b" />
 
 
 aa4
 编写被调用程序：
 代码
 系统调用图
-
+<img width="878" height="90" alt="image" src="https://github.com/user-attachments/assets/12274c08-0bdf-4bc1-b524-22297ba0b680" />
+不支持中文输出：我的学号，出现乱码。
 
 两个程序和图片
+system：
+<img width="855" height="200" alt="image" src="https://github.com/user-attachments/assets/93637897-dd5c-4f84-a2e0-694a15cd1eb0" />
+
+
+
+
+
+exec：
+<img width="665" height="179" alt="image" src="https://github.com/user-attachments/assets/09206440-12c2-41df-875d-4359e2737c30" />
+
 
 
 分析结果。
