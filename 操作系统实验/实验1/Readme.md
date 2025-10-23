@@ -1,9 +1,41 @@
-<img width="1685" height="174" alt="image" src="https://github.com/user-attachments/assets/1f27500a-4319-48c0-b827-274e0ab7f040" />我是傻逼     makefile？是什么
-实验一        
-1.运行课本程序
-对于所给程序，刚开始时我为了观察输入方便，在每个输出内加入了换行符\n,所输出的结果如下图所示。
-![示例图片](图片/pid报错.png)
+我是傻逼     makefile？是什么
+***实验一     
 
+
+
+*1.运行课本程序
+由于所给程序使用了wait函数且缺少头文件，在使用命令行编译时会报错：
+![示例图片](图片/pid报错.png)
+对于所给程序，刚开始时我为了观察输入方便，在每个输出内加入了换行符\n,所输出的结果如下图所示：
+<img width="571" height="704" alt="image" src="https://github.com/user-attachments/assets/4727eafb-6309-4f92-b41c-38862ffada5b" />
+<img width="524" height="704" alt="image" src="https://github.com/user-attachments/assets/1e31b4a8-2c92-4235-9636-cb6893d52cae" />
+如图所示，每次的输出分为4行，易于观察，但是奇怪的是输出的顺序。由于wait函数的影响，我认为应该是先输出子进程的两个pid，而后才是父进程，就像这样：
+child: pid = 0
+child: pid1 = 4890
+parent: pid = 4890
+parent: pid1 = 4889
+然而我在安装了基于OpenEuler的Deepin桌面系统的虚拟机上对相同的程序进行编译运行，结果却是这样的：
+<img width="526" height="684" alt="image" src="https://github.com/user-attachments/assets/cee314d3-27cc-4b1e-9c15-e1f550cf22ca" />
+<img width="536" height="676" alt="image" src="https://github.com/user-attachments/assets/b8e26388-a37d-462a-99bc-d1a70910f7ec" />
+这次则是先输出了父进程，然后才是子进程。
+查阅资料得知存在三种情况：
+情况 1：子进程先执行（常见）
+child: pid = 0
+child: pid1 = 1234
+parent: pid = 1234
+parent: pid1 = 1233
+情况 2：父进程先执行其打印（然后等待子进程）
+parent: pid = 1234
+parent: pid1 = 1233
+child: pid = 0
+child: pid1 = 1234
+其他可能：打印可能交错，例如：
+child: pid = 0
+parent: pid = 1234
+child: pid1 = 1234
+parent: pid1 = 1233
+查询资料得知，输出顺序取决于操作系统调度，具体原因：父进程和子进程是并发执行的（parallel execution）。操作系统内核的**调度器（scheduler）**决定哪个进程先运行，这取决于 CPU 负载、调度算法（通常是 CFS - Completely Fair Scheduler）和随机因素（如时钟中断）
+实际上，代码中每个 printf 都有 \n，所以理论上每行独立刷新，但如果缓冲区共享或切换时机巧合，仍可能部分重叠。这应该是主要原因。
 
 代码块？
 #include <sys/types.h>
