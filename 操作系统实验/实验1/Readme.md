@@ -1,13 +1,21 @@
 我是傻逼     makefile？是什么
-##实验一     
+## 实验一     
 
 
 
-#1.1运行课本程序
+# 1.1运行课本程序
 由于所给程序使用了wait函数且缺少头文件，在使用命令行编译时会报错：
-![示例图片](图片/pid报错.png)
+<div align="center">
+  ![示例图片](图片/pid报错.png)
+</div>
+
+
 对于所给程序，刚开始时我为了观察输入方便，在每个输出内加入了换行符\n,所输出的结果如下图所示：
-<img width="571" height="704" alt="image" src="https://github.com/user-attachments/assets/4727eafb-6309-4f92-b41c-38862ffada5b" />
+<div align="center">
+ <img width="571" height="704" alt="image" src="https://github.com/user-attachments/assets/4727eafb-6309-4f92-b41c-38862ffada5b" />
+</div>
+
+
 <img width="524" height="704" alt="image" src="https://github.com/user-attachments/assets/1e31b4a8-2c92-4235-9636-cb6893d52cae" />
 如图所示，每次的输出分为4行，易于观察，但是奇怪的是输出的顺序。由于wait函数的影响，我认为应该是先输出子进程的两个pid，而后才是父进程，就像这样：
 child: pid = 0
