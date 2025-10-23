@@ -1,8 +1,9 @@
-我是傻逼     makefile？是什么
+<img width="1685" height="174" alt="image" src="https://github.com/user-attachments/assets/1f27500a-4319-48c0-b827-274e0ab7f040" />我是傻逼     makefile？是什么
 实验一        
 1.运行课本程序
 对于所给程序，刚开始时我为了观察输入方便，在每个输出内加入了换行符\n,所输出的结果如下图所示。
-![Uploading image.png…]()
+![示例图片](图片/pid报错.png)
+
 
 代码块？
 #include <sys/types.h>
