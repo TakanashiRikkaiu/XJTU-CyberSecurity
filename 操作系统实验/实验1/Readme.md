@@ -36,7 +36,7 @@ child: pid1 = 1234
 parent: pid1 = 1233
 查询资料得知，输出顺序取决于操作系统调度，具体原因：父进程和子进程是并发执行的（parallel execution）。操作系统内核的**调度器（scheduler）**决定哪个进程先运行，这取决于 CPU 负载、调度算法（通常是 CFS - Completely Fair Scheduler）和随机因素（如时钟中断）
 实际上，代码中每个 printf 都有 \n，所以理论上每行独立刷新，但如果缓冲区共享或切换时机巧合，仍可能部分重叠。这应该是主要原因。
-
+删除各行的\n后再次使用华为云服务器进行编译运行，得到了正确的输出顺序：
 代码块？
 #include <sys/types.h>
 #include <stdio.h>
@@ -67,18 +67,122 @@ int main()
 
     return 0;
 }
-初步想法运行几十次获得统计性的一般规律。
+pid改
+初步想法运行几十次获得统计性的一般规律，限于篇幅仅运行10次，可以得到结果规律如下：
+？？？？？？？？？？？？？？？/
+
+
 在华为云和虚拟机分别运行
 结果：
 要不要加入头文件试试
 
 去除wait的结果：
+pid1改图片
+
+按照此逻辑，如果使用了wait且包含了头文件，应该是成功调用函数，父等子结束。
+结果分析：
+1.2情况对比。
+
+*2全局变量
+补全头文件后，添加一个全局变量g，代码如下；
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <stdio.h>
+#include <unistd.h>
+
+int g = 10;   
+
+int main()
+{
+    pid_t pid, pid1;
+    pid = fork();
+
+    if (pid < 0) {
+        fprintf(stderr, "Fork Failed");
+        return 1;
+    }
+    else if (pid == 0) {  
+        g += 5;  
+        pid1 = getpid();
+        printf("child: pid = %d\n", pid);
+        printf("child: pid1 = %d, g = %d\n", pid1, g);
+    }
+    else {  
+        g -= 5;  
+        pid1 = getpid();
+        printf("parent: pid = %d\n", pid);
+        printf("parent: pid1 = %d, g = %d\n", pid1, g);
+        wait(NULL);
+    }
+    return 0;
+}
+子进程自加，父进程自减。
+思考：
+
+
+图片：
+
+
+
+3.return
+代码
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <stdio.h>
+#include <unistd.h>
+
+int g = 10;   
+
+int main()
+{
+    pid_t pid, pid1;
+    pid = fork();
+
+    if (pid < 0) {
+        fprintf(stderr, "Fork Failed");
+        return 1;
+    }
+    else if (pid == 0) {  
+        g += 5;  
+        pid1 = getpid();
+        printf("child: pid1 = %d, g(after +5) = %d\n", pid1, g);
+    }
+    else {  
+        g -= 5;  
+        pid1 = getpid();
+        printf("parent: pid1 = %d, g(after -5) = %d\n", pid1, g);
+        wait(NULL);
+    }
+
+
+    g *= 2;  
+    printf("pid %d: g(after *2) = %d\n", getpid(), g);
+
+    return 0;
+}
+
+可得
+gl图片
+
+
+aa4
+编写被调用程序：
+代码
+系统调用图
+
+
+两个程序和图片
+
+
+分析结果。
 
 
 
 
 
-图片
+
+
+
 
 
 
