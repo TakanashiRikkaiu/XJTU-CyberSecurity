@@ -6,7 +6,7 @@
 # 1.1运行课本程序
 由于所给程序使用了wait函数且缺少头文件，在使用命令行编译时会报错：
 <div align="center">
-  ![示例图片](图片/pid报错.png)
+  <img width="1685" height="174" alt="image" src="https://github.com/user-attachments/assets/1bcf9792-5d23-467b-ac2e-23d05e967d4d" />
 </div>
 
 
@@ -14,14 +14,16 @@
 <div align="center">
  <img width="571" height="704" alt="image" src="https://github.com/user-attachments/assets/4727eafb-6309-4f92-b41c-38862ffada5b" />
 </div>
+<div align="center">
+  <img width="524" height="704" alt="image" src="https://github.com/user-attachments/assets/1e31b4a8-2c92-4235-9636-cb6893d52cae" />
+</div>
 
 
-<img width="524" height="704" alt="image" src="https://github.com/user-attachments/assets/1e31b4a8-2c92-4235-9636-cb6893d52cae" />
 如图所示，每次的输出分为4行，易于观察，但是奇怪的是输出的顺序。由于wait函数的影响，我认为应该是先输出子进程的两个pid，而后才是父进程，就像这样：
-child: pid = 0
-child: pid1 = 4890
-parent: pid = 4890
-parent: pid1 = 4889
+child: pid = 0  
+child: pid1 = 4890  
+parent: pid = 4890  
+parent: pid1 = 4889  
 然而我在安装了基于OpenEuler的Deepin桌面系统的虚拟机上对相同的程序进行编译运行，结果却是这样的：
 <img width="526" height="684" alt="image" src="https://github.com/user-attachments/assets/cee314d3-27cc-4b1e-9c15-e1f550cf22ca" />
 <img width="536" height="676" alt="image" src="https://github.com/user-attachments/assets/b8e26388-a37d-462a-99bc-d1a70910f7ec" />
