@@ -2,6 +2,8 @@
 实验一        
 1.运行课本程序
 对于所给程序，刚开始时我为了观察输入方便，在每个输出内加入了换行符\n,所输出的结果如下图所示。
+![Uploading image.png…]()
+
 代码块？
 #include <sys/types.h>
 #include <stdio.h>
