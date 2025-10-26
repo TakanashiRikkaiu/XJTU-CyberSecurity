@@ -202,12 +202,254 @@ exec：
 
 分析结果。
 
+1.2线程实验
+开始时，设计程序，创建两个子线程，两线程分别对同一个共享变量多次操作，观察输出结果。
+选择次数6000
+加锁or not？？？尝试
 
 
 
 
 
 
+
+
+1.3自旋锁实验
+补全代码如下：
+/**
+* spinlock.c
+* in xjtu
+* 2023.8
+*/
+#include <stdio.h>
+#include <pthread.h>
+
+// 定义自旋锁结构体
+typedef struct {
+    int flag;
+} spinlock_t;
+
+// 初始化自旋锁
+void spinlock_init(spinlock_t *lock) {
+    lock->flag = 0;
+}
+
+// 获取自旋锁
+void spinlock_lock(spinlock_t *lock) {
+    while (__sync_lock_test_and_set(&lock->flag, 1)) {
+        // 自旋等待，直到flag为0时才退出循环
+    }
+}
+
+// 释放自旋锁
+void spinlock_unlock(spinlock_t *lock) {
+    __sync_lock_release(&lock->flag);
+}
+
+// 共享变量
+int shared_value = 0;
+
+// 线程函数
+void *thread_function(void *arg) {
+    spinlock_t *lock = (spinlock_t *)arg;
+    
+    for (int i = 0; i < 5000; ++i) {
+        spinlock_lock(lock);
+        shared_value++;
+        spinlock_unlock(lock);
+    }
+    
+    return NULL;
+}
+
+int main() {
+    pthread_t thread1, thread2;
+    spinlock_t lock;
+
+    // 初始化自旋锁
+    spinlock_init(&lock);
+
+    // 输出初始共享变量值
+    printf("Before: shared_value = %d\n", shared_value);
+
+    // 创建两个线程
+    pthread_create(&thread1, NULL, thread_function, &lock);
+    pthread_create(&thread2, NULL, thread_function, &lock);
+
+    // 等待两个线程结束
+    pthread_join(thread1, NULL);
+    pthread_join(thread2, NULL);
+
+    // 输出最终共享变量值
+    printf("After: shared_value = %d\n", shared_value);
+
+    return 0;
+}
+
+结果如图所示：
+
+无论运行多少次，输出几乎总是一样：
+
+makefile
+复制代码
+Before: shared_value = 0
+After: shared_value = 10000
+
+尝试一下如果去掉如果去掉自旋锁
+
+
+
+非常好 👍 我来帮你完整、系统地分析一下这个 **自旋锁版本程序的运行结果与执行过程**。
+我们会从线程行为、锁机制、性能特征、以及实验现象四个角度来讲，形成一份标准化的实验分析。
+
+---
+
+## 🧩 一、程序执行流程概述
+
+运行过程大体分为以下几个阶段：
+
+1. **初始化阶段**
+
+   * 主线程调用 `spinlock_init(&lock)`，将 `lock.flag` 置为 `0`，表示锁处于未占用状态。
+   * 初始化共享变量 `shared_value = 0`。
+   * 输出初始值：
+
+     ```
+     Before: shared_value = 0
+     ```
+
+2. **线程创建阶段**
+
+   * 主线程使用 `pthread_create()` 创建两个线程：`thread1` 和 `thread2`。
+   * 两个线程开始并发执行 `thread_function()`，共用同一个自旋锁 `lock`。
+
+3. **线程执行阶段**
+
+   * 每个线程内部执行循环 `for (int i = 0; i < 5000; ++i)`：
+
+     * 调用 `spinlock_lock(&lock)` 尝试加锁；
+     * 获得锁后执行 `shared_value++`；
+     * 执行完毕后调用 `spinlock_unlock(&lock)` 释放锁；
+     * 再进入下一轮循环。
+
+   由于自旋锁是通过原子操作实现的：
+
+   ```c
+   while (__sync_lock_test_and_set(&lock->flag, 1)) {
+       // busy-wait
+   }
+   ```
+
+   只有一个线程能成功把 `flag` 从 `0 → 1`，另一线程若看到 `flag == 1`，则在循环中忙等待直到其变为 0。
+
+4. **线程结束阶段**
+
+   * 每个线程执行完 5000 次加 1 后返回。
+   * 主线程使用 `pthread_join()` 等待两个线程都结束。
+
+5. **结果输出阶段**
+
+   * 最终输出：
+
+     ```
+     After: shared_value = 10000
+     ```
+
+---
+
+## 🔒 二、自旋锁运行机制分析
+
+| 步骤                       | 状态变化            | 说明              |
+| ------------------------ | --------------- | --------------- |
+| 线程 A 尝试加锁                | flag = 0 → 1    | 成功进入临界区         |
+| 线程 B 同时加锁                | flag = 1（锁已被占用） | B 进入自旋等待状态      |
+| 线程 A 执行 `shared_value++` | 受保护，不被打断        | 保证原子性           |
+| 线程 A 释放锁                 | flag = 1 → 0    | B 可继续执行         |
+| 线程 B 获得锁                 | flag = 0 → 1    | B 进入临界区         |
+| 重复此过程 5000 次 × 2 线程      | ——              | 最终共享变量稳定为 10000 |
+
+---
+
+## 📈 三、实验运行结果与分析
+
+多次运行的输出示例（结果一致）：
+
+```
+Before: shared_value = 0
+After: shared_value = 10000
+```
+
+### 1. **结果正确性**
+
+* 结果稳定且始终等于 `5000 × 2 = 10000`。
+* 表明自旋锁有效地保证了共享变量访问的**互斥性**（mutual exclusion）。
+
+### 2. **线程调度特征**
+
+* 两个线程不断争夺锁的控制权。
+* 在某一时刻，只有一个线程能修改 `shared_value`。
+* 自旋期间线程不会睡眠，而是**忙等待**（busy-waiting）。
+
+### 3. **性能特点**
+
+* 自旋锁的优势在于：
+
+  * 锁持有时间短时，忙等待比上下文切换更高效。
+  * 不涉及系统调用，不会进入内核态。
+* 缺点在于：
+
+  * 若锁竞争严重或锁持有时间较长，会浪费 CPU 时间在循环等待中。
+  * 在单核 CPU 上特别低效，因为等待线程无法真正并行。
+
+### 4. **线程交替行为（逻辑示意）**
+
+| 时间片 | 线程       | 操作              | 共享变量值 |
+| --- | -------- | --------------- | ----- |
+| t1  | Thread A | 获取锁 → 加 1 → 释放锁 | 1     |
+| t2  | Thread B | 获取锁 → 加 1 → 释放锁 | 2     |
+| t3  | Thread A | 加 1             | 3     |
+| …   | …        | …               | …     |
+| 最后  | Thread B | 加到 10000        | 10000 |
+
+---
+
+## 🧠 四、实验结论总结
+
+1. **功能正确性：**
+   使用自旋锁后，两个线程对共享变量的访问变为互斥，完全消除了数据竞争。
+
+2. **执行结果：**
+   程序每次运行结果一致：
+
+   ```
+   After: shared_value = 10000
+   ```
+
+3. **机制优势：**
+
+   * 锁操作开销小；
+   * 不涉及线程睡眠/唤醒；
+   * 适合短期、低延迟的临界区。
+
+4. **机制劣势：**
+
+   * 会占用 CPU 忙等待；
+   * 若锁持有时间较长，会显著降低并发效率；
+   * 在单核系统中，等待线程无法获得执行机会。
+
+---
+
+## 🧩 五、延伸思考
+
+| 锁类型                 | 等待方式 | 优点       | 缺点       | 典型场景     |
+| ------------------- | ---- | -------- | -------- | -------- |
+| **自旋锁 (spinlock)**  | 忙等待  | 快速响应、低延迟 | 占 CPU    | 短临界区、高并发 |
+| **互斥锁 (mutex)**     | 阻塞等待 | 不浪费 CPU  | 上下文切换开销大 | 临界区耗时较长  |
+| **信号量 (semaphore)** | 计数控制 | 可控制资源数量  | 实现复杂     | 资源池管理    |
+
+---
+
+是否希望我帮你把这份分析整理成实验报告格式（包括**实验目的、原理、结果、结论**四个标准部分）？那样可以直接放进实验文档里用。
 
 
 
