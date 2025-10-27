@@ -1,6 +1,7 @@
 我是傻逼     makefile？是什么
 # 实验一     
 ## 1.1进程实验
+### 1.1.1wait函数
 开始实验，直接提取图片代码运行。由于所给程序使用了wait函数且缺少头文件，在使用命令行编译时会报错，如图所示：
 <div align="center">
   <img width="1685" height="174" alt="image" src="https://github.com/user-attachments/assets/1bcf9792-5d23-467b-ac2e-23d05e967d4d" />
@@ -95,7 +96,7 @@ pid1改图片
 结果分析：
 1.2情况对比。
 
-*2全局变量
+### 1.1.2全局变量
 补全头文件后，添加一个全局变量g，代码如下；
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -178,7 +179,7 @@ int main()
 gl图片
 <img width="880" height="201" alt="image" src="https://github.com/user-attachments/assets/2bb70819-7433-43b9-929d-4b2aaca9595b" />
 
-
+### 1.1.3系统调用
 aa4
 编写被调用程序：
 代码
