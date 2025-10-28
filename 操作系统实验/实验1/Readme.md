@@ -5,7 +5,7 @@
 搭建好华为云服务器后开始实验，直接提取图片代码运行。由于所给程序使用了wait函数且缺少头文件，在使用命令行编译时会报错，如图所示：
 <div align="center">
   <img width="1685" height="174" alt="image" src="https://github.com/user-attachments/assets/1bcf9792-5d23-467b-ac2e-23d05e967d4d" />
-  缺少头文件的运行结果
+  <br>缺少头文件的运行结果
 </div>
 
 不过报错并不影响程序运行。对于所给程序，刚开始时我为了观察输入方便，在每个输出内加入了换行符\n,所输出的结果如下图所示：
@@ -14,7 +14,7 @@
 </div>
 <div align="center">
   <img width="524" height="704" alt="image" src="https://github.com/user-attachments/assets/1e31b4a8-2c92-4235-9636-cb6893d52cae" />  
-  存在换行符的情况
+  <br>存在换行符的情况
 </div>
 
 如图所示，每次的输出分为4行，易于观察，但是奇怪的是输出的顺序。由于wait函数的影响，我认为应该是先输出子进程的两个pid，而后才是父进程，就像这样：  
@@ -29,7 +29,7 @@ parent: pid1 = 4889
 
 <div align="center">
  <img width="536" height="676" alt="image" src="https://github.com/user-attachments/assets/b8e26388-a37d-462a-99bc-d1a70910f7ec" />
-  在虚拟机上运行
+  <br>在虚拟机上运行
  </div> 
 
 
@@ -85,9 +85,12 @@ int main()
 }
 ```
 再次使用华为云服务器进行编译运行，得到了正确的输出顺序：
-<img width="1455" height="317" alt="image" src="https://github.com/user-attachments/assets/7ae545c1-58a6-4562-bf4d-ccef3ea02a46" />
--删除\n后的运行结果
-初步想法：运行几十次获得统计性的一般规律，限于篇幅仅运行10次，可以得到结果规律如下：  
+<div align="center">
+  <img width="1455" height="317" alt="image" src="https://github.com/user-attachments/assets/7ae545c1-58a6-4562-bf4d-ccef3ea02a46" />
+  <br>删除\n后的运行结果
+</div>
+
+初步想法：运行几十次获得统计性的一般规律，限于篇幅仅运行10次，可以得到结果规律如下：    
 多次运行程序时，父子进程的PID似乎在连续递增，前后差值基本为2，偶尔出现3；  
 每一次运行结果中，子进程的pid总是为0，且子进程的pid1与父进程的pid始终相等，父进程的pid始终比其pid1大1。  
 原因分析：  
@@ -96,22 +99,28 @@ int main()
 父进程的 pid = fork() 返回值 = 子进程的 PID。
 因此，二者相等，这是因为父进程通过这个值来“引用”子进程。
 关于父进程中pid与pid1插值为1的关系，查询得到的解释是父PID通常比子PID小，但不一定是正好相差1。
-至于前后两次间的pid关系，我的理解是：每次运行程序会创建2个新进程，所以 PID 总是递增两个；但是若中间有系统进程插入，可能会略有跳变，比如这个3，但整体仍是递增的。  
-
-去除wait后：
+至于前后两次间的pid关系，我的理解是：每次运行程序会创建2个新进程，所以 PID 总是递增两个；但是若中间有系统进程插入，可能会略有跳变，比如这个3，但整体仍是递增的。    
+[参考资料：进程标识与进程创建（pid, fork）](https://blog.csdn.net/daaikuaichuan/article/details/82779011)      
+去除wait后运行：
+<div align="center">
 <img width="1476" height="282" alt="image" src="https://github.com/user-attachments/assets/9c1ab1ef-8303-4083-8cb5-979be170ef3e" />
-去除wait函数的结果
-
-对比以上两种情况发现，wait存在时，原本的程序输出都是子进程先于父进程，但在去掉wait函数后，父、子进程的输出先后次序就不一定了。  
-分析：有wait()时，父进程会执行到：wait(NULL)，这条语句会让父进程暂停执行，直到子进程结束。所以，子进程几乎总是先完成输出，父进程最后打印、最后退出，输出顺序比较稳定。  
-     去掉wait()后，父进程不再等待子进程，它们并发执行，结果就会有前面说的3种可能。同时父进程可能先退出，导致出现孤儿进程。  
+</br>去除wait函数的结果
+</div>
+pid内容关系类似上面的，但是输出顺序发生变化。对比以上两种情况发现，wait存在时，原本的程序输出都是子进程先于父进程，但在去掉wait函数后，父、子进程的输出先后次序就不一定了。    
+分析：有wait()时，父进程会执行到wait(NULL)，这条语句会让父进程暂停执行，直到子进程结束。所以，子进程几乎总是先完成输出，父进程最后打印、最后退出，输出顺序比较稳定。    
+     去掉wait()后，父进程不再等待子进程，它们并发执行，结果就会有前面说的3种可能。同时父进程可能先退出，导致出现孤儿进程。    
 而一开始wait存在时却交替输出就是因为printf缓冲区有换行符才会刷新缓冲区，将缓冲区中的内容显示出来。
-按照此逻辑，如果使用了wait且包含了头文件，应该是成功调用函数，父等子结束。
-结果分析：查阅资料，wait()的作用是让父进程等待子进程结束并回收资源；<sys/wait.h>的作用是声明wait()函数，让编译器能正确检查参数与返回类型。不写wait()只是让系统自己回收资源，但会导致输出乱序和孤儿进程。
-
+按照此逻辑，如果使用了wait且包含了头文件，应该是成功调用函数，父等子结束。  
+尝试了一下把wait放到父进程输出语句之前，运行代码：  
+<div align="center">
+pid2
+</div>  
+这次输出顺序均为子先，父后。  
+分析：查阅资料，wait()的作用是让父进程等待子进程结束并回收资源；<sys/wait.h>的作用是声明wait()函数，让编译器能正确检查参数与返回类型。不写wait()只是让系统自己回收资源，但会导致输出乱序和孤儿进程。
 
 ### 1.1.2全局变量
-为方便观察，保留换行符，并补全头文件后，添加一个全局变量g，代码如下；
+为方便观察，保留换行符，并补全头文件后，添加一个全局变量g，代码如下；  
+```
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <stdio.h>
@@ -143,13 +152,19 @@ int main()
     }
     return 0;
 }
+```
 子进程自加，父进程自减。运行多次g输出结果不变：
+<div align="center">
 <img width="585" height="176" alt="image" src="https://github.com/user-attachments/assets/7c5d1165-f78a-4962-a23f-b0ccbba0ce45" />
-分析：父子进程各自维护一份独立的变量副本，fork()发生时，变量g的值被复制到子进程中。因此，父进程g=5，子进程g=15，互不影响。
-
-
-return前增加操作，修改代码如下：
-
+</div>
+为了探究在父子进程中同一变量的关系，我查看了一篇文章 [父子进程的内存变量关系 ](https://blog.csdn.net/qq_26836575/article/details/82014685)：  
+fork()创建子进程时继承了父进程的数据段、代码段、栈段、堆，注意从父进程继承来的是虚拟地址空间，同时也复制了页表（没有复制物理块）。因此，此时父子进程拥有相同的虚拟地址，映射的物理内存也是一致的（独立的虚拟地址空间，共享父进程的物理内存）       
+一篇文章说：父子进程打印出来的全局变量地址一样，原因在于这个地址是虚拟地址，而因为子进程的创建是复制了父进程的虚拟地址空间的，因为这两个变量的虚拟地址也是一样的。（我们打印变量的地址都是虚拟地址，物理内存地址是不能够直接访问的）    
+二者物理地址不同
+分析：父子进程各自维护一份独立的变量，fork()发生时，变量g的值被复制到子进程中。因此，父进程g=5，子进程g=15，互不影响。  
+  
+return前增加操作，修改代码如下：  
+```
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <stdio.h>
@@ -184,15 +199,17 @@ int main()
 
     return 0;
 }
-
-多次运行可得相同结果。
+```  
+多次运行可得相同结果。  
+<div align="center">
 <img width="880" height="201" alt="image" src="https://github.com/user-attachments/assets/2bb70819-7433-43b9-929d-4b2aaca9595b" />
-
-分析：每个进程独立执行g *= 2，父子进程的结果互不影响。子进程：(10+5)*2=30，父进程：(10-5)*2=10。
+</div>      
+分析：和上面类似，每个进程独立执行g *= 2，父子进程的结果互不影响。子进程：(10+5)*2=30，父进程：(10-5)*2=10。
 
 ### 1.1.3调用外部程序
 
-编写被调用程序代码：
+编写被调用程序代码：  
+```
 #include <stdio.h>
 #include <unistd.h>
 
@@ -201,13 +218,16 @@ int main()
     printf("system_call PID: %d, 我的学号:2233514228\n", getpid());
     return 0;
 }
-
-运行：
-<img width="878" height="90" alt="image" src="https://github.com/user-attachments/assets/12274c08-0bdf-4bc1-b524-22297ba0b680" />
-不支持中文输出：我的学号这几个字，出现乱码。
-
+```
+<div align="center">
+  <img width="878" height="90" alt="image" src="https://github.com/user-attachments/assets/12274c08-0bdf-4bc1-b524-22297ba0b680" />
+</div>  
+不支持中文输出：我的学号 这几个字，出现乱码。
+解决：配置中文环境失败，好像是程序编码格式问题，于是改中文为英文：  
+sys改
 两个程序和图片
 system：
+```
 #include <sys/types.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -236,13 +256,13 @@ int main()
 
     return 0;
 }
-<img width="855" height="200" alt="image" src="https://github.com/user-attachments/assets/93637897-dd5c-4f84-a2e0-694a15cd1eb0" />
-
-
-
-
+```
+<div align="center">
+ <img width="855" height="200" alt="image" src="https://github.com/user-attachments/assets/93637897-dd5c-4f84-a2e0-694a15cd1eb0" />
+</div>  
 
 exec：
+```
 #include <sys/types.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -272,25 +292,15 @@ int main()
 
     return 0;
 }
+```
+<div align="center">
 <img width="665" height="179" alt="image" src="https://github.com/user-attachments/assets/09206440-12c2-41df-875d-4359e2737c30" />
+</div>
 
-
-
-分析结果：调用system后外部程序中的pid比子进程pid 大1，而调用execl后外部程序中的pid与子进程相同。这是为什么：使用 system() 时：
-
-子进程再生成一个新进程来运行外部命令；
-
-system_call 是孙进程；
-
-system_call 的 PID 与子进程不同，父 PID 为子进程。
-
-使用 exec() 时：
-
-子进程被替换为新程序；
-
-system_call 与子进程共用同一个 PID；
-
-system_call 的父进程为原父进程。
+分析结果：调用system后外部程序中的pid比子进程pid大1，而调用execl后外部程序中的pid与子进程相同。这是为什么：？
+根据https://blog.csdn.net/hza419763578/article/details/84305468      
+使用 system() 时：子进程再生成一个新进程来运行外部命令，system_call是孙进程；system_call 的 PID 与子进程不同，父 PID 为子进程。  
+使用 exec() 时：子进程被替换为新程序；system_call 与子进程共用同一个 PID；ystem_call的父进程为原父进程。  
 
 ## 1.2线程实验
 开始时，设计程序，创建两个子线程，两线程分别对同一个共享变量多次操作，观察输出结果。
