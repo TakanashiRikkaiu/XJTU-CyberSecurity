@@ -2,7 +2,7 @@
 # 实验一     
 ## 1.1进程实验
 ### 1.1.1wait函数
-开始实验，直接提取图片代码运行。由于所给程序使用了wait函数且缺少头文件，在使用命令行编译时会报错，如图所示：
+搭建好华为云服务器后开始实验，直接提取图片代码运行。由于所给程序使用了wait函数且缺少头文件，在使用命令行编译时会报错，如图所示：
 <div align="center">
   <img width="1685" height="174" alt="image" src="https://github.com/user-attachments/assets/1bcf9792-5d23-467b-ac2e-23d05e967d4d" />
   缺少头文件的运行结果
@@ -46,7 +46,7 @@ child: pid1 = 1234
 parent: pid1 = 1233
 查询资料得知，输出顺序取决于操作系统调度，具体原因：fork() 创建子进程后，父进程和子进程是并发执行的。操作系统内核的调度器决定哪个进程先运行，这取决于 CPU 负载、调度算法和随机因素（如时钟中断）。  
 实际上，代码中每个printf都有\n，所以理论上每行独立刷新，但如果缓冲区共享或切换时机巧合，仍可能部分重叠，这应该是主要原因。  
-删除各行的\n后再次使用华为云服务器进行编译运行，得到了正确的输出顺序：
+删除各行的\n后,代码如下：
 代码块？
 #include <sys/types.h>
 #include <stdio.h>
@@ -65,36 +65,43 @@ int main()
     }
     else if (pid == 0) { /* child process */
         pid1 = getpid();
-        printf("child: pid = %d\n", pid);   /* A */
-        printf("child: pid1 = %d\n", pid1); /* B */
+        printf("child: pid = %d", pid);   /* A */
+        printf("child: pid1 = %d", pid1); /* B */
     }
     else { /* parent process */
         pid1 = getpid();
-        printf("parent: pid = %d\n", pid);   /* C */
-        printf("parent: pid1 = %d\n", pid1); /* D */
+        printf("parent: pid = %d", pid);   /* C */
+        printf("parent: pid1 = %d", pid1); /* D */
         wait(NULL);
     }
 
     return 0;
 }
-
+再次使用华为云服务器进行编译运行，得到了正确的输出顺序：
 <img width="1455" height="317" alt="image" src="https://github.com/user-attachments/assets/7ae545c1-58a6-4562-bf4d-ccef3ea02a46" />
+-删除\n后的运行结果
+初步想法：运行几十次获得统计性的一般规律，限于篇幅仅运行10次，可以得到结果规律如下：  
+多次运行程序时，父子进程的PID似乎在连续递增，前后差值基本为2，偶尔出现3；  
+每一次运行结果中，子进程的pid总是为0，且子进程的pid1与父进程的pid始终相等，父进程的pid始终比其pid1大1。  
+原因分析：  
+在子进程中，fork()返回值pid始终为0。
+子进程的 pid1 = getpid() = 子进程的实际 PID。
+父进程的 pid = fork() 返回值 = 子进程的 PID。
+因此，二者相等，这是因为父进程通过这个值来“引用”子进程。
+关于父进程中pid与pid1插值为1的关系，查询得到的解释是父PID通常比子PID小，但不一定是正好相差1。
+至于前后两次间的pid关系，我的理解是：每次运行程序会创建2个新进程，所以 PID 总是递增两个；但是若中间有系统进程插入，可能会略有跳变，比如这个3，但整体仍是递增的。  
 
-初步想法：运行几十次获得统计性的一般规律，限于篇幅仅运行10次，可以得到结果规律如下：
-？？？？？？？？？？？？？？？/
-
-
-在华为云和虚拟机分别运行
-结果：
-要不要加入头文件试试
-
-去除wait的结果：
-pid1改图片
+去除wait后：
 <img width="1476" height="282" alt="image" src="https://github.com/user-attachments/assets/9c1ab1ef-8303-4083-8cb5-979be170ef3e" />
+去除wait函数的结果
 
+对比以上两种情况发现，wait存在时，原本的程序输出都是子进程先于父进程，但在去掉wait函数后，父、子进程的输出先后次序就不一定了。  
+分析：有wait()时，父进程会执行到：wait(NULL)，这条语句会让父进程暂停执行，直到子进程结束。所以，子进程几乎总是先完成输出，父进程最后打印、最后退出，输出顺序比较稳定。  
+     去掉wait()后，父进程不再等待子进程，它们并发执行，结果就会有前面说的3种可能。同时父进程可能先退出，导致出现孤儿进程。  
+而一开始wait存在时却交替输出就是因为printf缓冲区有换行符才会刷新缓冲区，将缓冲区中的内容显示出来。
 按照此逻辑，如果使用了wait且包含了头文件，应该是成功调用函数，父等子结束。
-结果分析：
-1.2情况对比。
+结果分析：查阅资料，wait()的作用是让父进程等待子进程结束并回收资源；<sys/wait.h>的作用是声明wait()函数，让编译器能正确检查参数与返回类型。不写wait()只是让系统自己回收资源，但会导致输出乱序和孤儿进程。
+
 
 ### 1.1.2全局变量
 补全头文件后，添加一个全局变量g，代码如下；
@@ -129,16 +136,17 @@ int main()
     }
     return 0;
 }
-子进程自加，父进程自减。
-思考：
-
-
+子进程自加，父进程自减。运行多次g结果不变。
 图片：
 <img width="585" height="176" alt="image" src="https://github.com/user-attachments/assets/7c5d1165-f78a-4962-a23f-b0ccbba0ce45" />
+思考：**分析：**  
+- 父子进程各自维护一份独立的变量副本。  
+- `fork()` 发生时，变量 `g` 的值被复制到子进程中。  
+- 因此，父进程 `g=5`，子进程 `g=15`，互不影响。
 
+---
 
-
-3.return
+return前增加操作
 代码
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -176,14 +184,30 @@ int main()
 }
 
 可得
-gl图片
+图片
 <img width="880" height="201" alt="image" src="https://github.com/user-attachments/assets/2bb70819-7433-43b9-929d-4b2aaca9595b" />
 
-### 1.1.3系统调用
-aa4
+**分析：**  
+每个进程独立执行 `g *= 2`，父子进程的结果互不影响。  
+- 子进程：`(10+5)*2=30`  
+- 父进程：`(10-5)*2=10`
+
+---
+
+### 1.1.3调用外部程序
+
 编写被调用程序：
-代码
-系统调用图
+代码：
+#include <stdio.h>
+#include <unistd.h>
+
+int main()
+{
+    printf("system_call PID: %d, Student ID:2233514228\n", getpid());
+    return 0;
+}
+
+运行：
 <img width="878" height="90" alt="image" src="https://github.com/user-attachments/assets/12274c08-0bdf-4bc1-b524-22297ba0b680" />
 不支持中文输出：我的学号，出现乱码。
 
