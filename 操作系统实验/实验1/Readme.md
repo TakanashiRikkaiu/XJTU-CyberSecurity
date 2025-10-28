@@ -53,6 +53,7 @@ parent: pid1 = 1233
 查询资料得知，输出顺序取决于操作系统调度，具体原因：fork() 创建子进程后，父进程和子进程是并发执行的。操作系统内核的调度器决定哪个进程先运行，这取决于 CPU 负载、调度算法和随机因素（如时钟中断）。    
 实际上，代码中每个printf都有\n，所以理论上每行独立刷新，但如果缓冲区共享或切换时机巧合，仍可能部分重叠，这应该是主要原因。    
 删除各行的\n后,代码如下：  
+
 ```
 #include <sys/types.h>
 #include <stdio.h>
@@ -84,6 +85,7 @@ int main()
     return 0;
 }
 ```
+
 再次使用华为云服务器进行编译运行，得到了正确的输出顺序：
 <div align="center">
   <img width="1455" height="317" alt="image" src="https://github.com/user-attachments/assets/7ae545c1-58a6-4562-bf4d-ccef3ea02a46" />
@@ -120,6 +122,7 @@ pid2
 
 ### 1.1.2全局变量
 为方便观察，保留换行符，并补全头文件后，添加一个全局变量g，代码如下；  
+
 ```
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -153,17 +156,33 @@ int main()
     return 0;
 }
 ```
+
 子进程自加，父进程自减。运行多次g输出结果不变：
 <div align="center">
 <img width="585" height="176" alt="image" src="https://github.com/user-attachments/assets/7c5d1165-f78a-4962-a23f-b0ccbba0ce45" />
 </div>
-为了探究在父子进程中同一变量的关系，我查看了一篇文章 [父子进程的内存变量关系 ](https://blog.csdn.net/qq_26836575/article/details/82014685)：  
-fork()创建子进程时继承了父进程的数据段、代码段、栈段、堆，注意从父进程继承来的是虚拟地址空间，同时也复制了页表（没有复制物理块）。因此，此时父子进程拥有相同的虚拟地址，映射的物理内存也是一致的（独立的虚拟地址空间，共享父进程的物理内存）       
-一篇文章说：父子进程打印出来的全局变量地址一样，原因在于这个地址是虚拟地址，而因为子进程的创建是复制了父进程的虚拟地址空间的，因为这两个变量的虚拟地址也是一样的。（我们打印变量的地址都是虚拟地址，物理内存地址是不能够直接访问的）    
-二者物理地址不同
-分析：父子进程各自维护一份独立的变量，fork()发生时，变量g的值被复制到子进程中。因此，父进程g=5，子进程g=15，互不影响。  
+
+为了探究在父子进程中同一变量的关系，我查看了一篇文章  
+[父子进程的内存变量关系](https://blog.csdn.net/qq_26836575/article/details/82014685)：
+
+> fork() 创建子进程时继承了父进程的数据段、代码段、栈段、堆，  
+> 注意从父进程继承来的是虚拟地址空间，同时也复制了页表（没有复制物理块）。  
+> 因此，此时父子进程拥有相同的虚拟地址，映射的物理内存也是一致的（独立的虚拟地址空间，共享父进程的物理内存）。
+
+一篇文章说：  
+父子进程打印出来的全局变量地址一样，原因在于这个地址是虚拟地址，  
+而因为子进程的创建是复制了父进程的虚拟地址空间的，  
+所以这两个变量的虚拟地址也是一样的。  
+（我们打印变量的地址都是虚拟地址，物理内存地址是不能够直接访问的）
+
+**二者物理地址不同。**
+
+**分析：**  
+父子进程各自维护一份独立的变量，fork()发生时，变量 g 的值被复制到子进程中。  
+因此，父进程 g = 5，子进程 g = 15，互不影响。
   
 return前增加操作，修改代码如下：  
+
 ```
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -200,6 +219,7 @@ int main()
     return 0;
 }
 ```  
+
 多次运行可得相同结果。  
 <div align="center">
 <img width="880" height="201" alt="image" src="https://github.com/user-attachments/assets/2bb70819-7433-43b9-929d-4b2aaca9595b" />
@@ -209,6 +229,7 @@ int main()
 ### 1.1.3调用外部程序
 
 编写被调用程序代码：  
+
 ```
 #include <stdio.h>
 #include <unistd.h>
@@ -219,14 +240,17 @@ int main()
     return 0;
 }
 ```
+
 <div align="center">
   <img width="878" height="90" alt="image" src="https://github.com/user-attachments/assets/12274c08-0bdf-4bc1-b524-22297ba0b680" />
 </div>  
 不支持中文输出：我的学号 这几个字，出现乱码。
-解决：配置中文环境失败，好像是程序编码格式问题，于是改中文为英文：  
-sys改
-两个程序和图片
+解决：配置中文环境失败，好像是程序编码格式问题，于是改中文为英文：    
+
+sys改  
+两个程序和图片  
 system：
+
 ```
 #include <sys/types.h>
 #include <stdio.h>
@@ -257,11 +281,13 @@ int main()
     return 0;
 }
 ```
+
 <div align="center">
  <img width="855" height="200" alt="image" src="https://github.com/user-attachments/assets/93637897-dd5c-4f84-a2e0-694a15cd1eb0" />
 </div>  
 
 exec：
+
 ```
 #include <sys/types.h>
 #include <stdio.h>
@@ -293,6 +319,7 @@ int main()
     return 0;
 }
 ```
+
 <div align="center">
 <img width="665" height="179" alt="image" src="https://github.com/user-attachments/assets/09206440-12c2-41df-875d-4359e2737c30" />
 </div>
@@ -304,6 +331,10 @@ int main()
 
 ## 1.2线程实验
 开始时，设计程序，创建两个子线程，两线程分别对同一个共享变量多次操作，观察输出结果。
+编译报错，报错信息显示pthread 库中的函数是未定义的引用。  
+解决方法：由于pthread 库不是Linux 系统默认的库，链接时需要使用库libpthread.a，所以使用pthread_create 创建线程时，要在编译中加-lpthread 参数。  
+
+```
 #include <stdio.h>
 #include <pthread.h>
 #include <unistd.h>
@@ -348,57 +379,52 @@ int main() {
 
     return 0;
 }
+```
 
-选择次数6000，理论上输出应该是0。
+选择次数6000，如果二者独立，理论上输出应该是0。
 加锁or not？？？尝试
 运行十余次，出现了多次现象，如图所示
-
+<div align="center">
+<img width="665" height="179" alt="image" src="https://github.com/user-attachments/assets/09206440-12c2-41df-875d-4359e2737c30" />
 <img width="760" height="504" alt="image" src="https://github.com/user-attachments/assets/529ada1d-1b4a-4516-b6ac-6dcb5e52bbf4" />
 <img width="797" height="506" alt="image" src="https://github.com/user-attachments/assets/97cdf279-342d-45c5-a901-87ce234c0cc5" />
 <img width="777" height="504" alt="image" src="https://github.com/user-attachments/assets/b8c4152b-1e62-4760-8c1e-ba5408894a24" />
 <img width="780" height="507" alt="image" src="https://github.com/user-attachments/assets/367d3614-05df-4d28-8cd9-9aa915ec3afc" />
+</div>
+其实输出还是有不少0的，偶尔出现其他数字。但我感觉在没有同步机制的情况下，两线程对同一个共享变量进行修改时，结果应该是不确定的，而且几乎不可能完全等于理论值0。
+查阅资料得知，现实运行中（尤其是循环较少，比如6000次），往往会出现一种“假象”——运行了多次，结果反而一直是0。
+这其实是因为循环次数太少，6000次在现代 CPU 上只需要几微秒完成。调度切换（线程间切换）往往需要上万微秒级别，线程可能还没被切换就已经跑完了。  
 
-我感觉在没有同步机制的情况下，两线程对同一个共享变量进行修改时，结果应该是不确定的，而且几乎不可能完全等于理论值0。
-
-查阅资料得知，现实运行中（尤其是循环较少，比如6000次），往往会出现一种“假象”——你运行了几次，结果反而一直是0。
-这其实是因为：
-循环次数太少**
-   6000次在现代 CPU 上只需要几微秒完成。
-   调度切换（线程间切换）往往需要上万微秒级别，线程可能还没被切换就已经跑完了。
-
-3. **系统负载低**
-   若此时 CPU 空闲，操作系统就不会频繁打断线程调度。
-   两个线程各跑完一半，就好像是顺序执行一样。
-
-
-所以主观上应该不太可能完全等于理论值**”是正确的，
-
-
-
-增加操作数☞60000
+增加操作数☞60000，程序thread0
+<div align="center">
 <img width="882" height="787" alt="image" src="https://github.com/user-attachments/assets/dcab8922-6c62-4712-a117-2b1b9295d045" />
 <img width="797" height="762" alt="image" src="https://github.com/user-attachments/assets/1ef04413-f515-419c-9dee-ca6c4cdeecc5" />
 <img width="825" height="757" alt="image" src="https://github.com/user-attachments/assets/4c2a1d75-0231-4588-bfe8-c23b60b8f19b" />
 <img width="790" height="256" alt="image" src="https://github.com/user-attachments/assets/4f9ffc9f-e8a2-4f92-afc1-1f5336685f35" />
+</div>
+4张图，此时次次输出均与理论值不符。说明出现线程共享资源时的竞争现象。  
+分析：count++与count--都不是原子操作，会分为读、修改、写三个步骤，当两个线程几乎同时访问时，会出现“读到旧值 → 改错 → 覆盖”的情况，所以最终结果通常不是 0，而是一个随机波动的小整数。  
 
-4图，此时次次输出均与理论值不符。分析：
-
-；增加信号量和pv操作，再次运行10次结果如下
-图3*
+因此需要信号量或互斥锁实现互斥访问，就能让最终结果稳定为0  
+①thread1 增加信号量和pv操作，再次运行10次结果如下
+<div align="center">
 <img width="867" height="617" alt="image" src="https://github.com/user-attachments/assets/145e5e03-9a28-4b25-acd4-7fe4bd9107cc" />
 <img width="867" height="591" alt="image" src="https://github.com/user-attachments/assets/6c3d761f-7069-41d2-9adf-1809a9437688" />
 <img width="867" height="783" alt="image" src="https://github.com/user-attachments/assets/fdf9a9e6-6a39-4051-a58b-b27c002dba45" />
+</div>
+虽然过程中count变化不定，但最终可得输出稳定为0  
 
-虽然过程中count变化不定，但最终可得输出稳定为0
-；
-使用互斥锁。
-
+②thread2 使用互斥锁。  
+<div align="center">
+<img width="881" height="627" alt="image" src="https://github.com/user-attachments/assets/1fadaef7-a40f-4719-9222-65dffbe65d24" />
+</div>
 
 尝试灵活运用信号量和PV 操作实现线程间的同步互斥。？？？？？？？？？？？？？？？？？？？
 综合运用，2张图
+<div align="center">
 <img width="874" height="876" alt="image" src="https://github.com/user-attachments/assets/eeee8ad1-6900-4475-82b6-997a97982429" />
 <img width="738" height="844" alt="image" src="https://github.com/user-attachments/assets/3eb482cd-d3b9-4c9f-9532-89815eb794b4" />
-
+</div>
 分析pid关系
 
 2种方法调用
