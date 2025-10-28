@@ -104,7 +104,7 @@ int main()
 
 
 ### 1.1.2全局变量
-补全头文件后，添加一个全局变量g，代码如下；
+为方便观察，保留换行符，并补全头文件后，添加一个全局变量g，代码如下；
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <stdio.h>
@@ -136,18 +136,13 @@ int main()
     }
     return 0;
 }
-子进程自加，父进程自减。运行多次g结果不变。
-图片：
+子进程自加，父进程自减。运行多次g输出结果不变：
 <img width="585" height="176" alt="image" src="https://github.com/user-attachments/assets/7c5d1165-f78a-4962-a23f-b0ccbba0ce45" />
-思考：**分析：**  
-- 父子进程各自维护一份独立的变量副本。  
-- `fork()` 发生时，变量 `g` 的值被复制到子进程中。  
-- 因此，父进程 `g=5`，子进程 `g=15`，互不影响。
+分析：父子进程各自维护一份独立的变量副本，fork()发生时，变量g的值被复制到子进程中。因此，父进程g=5，子进程g=15，互不影响。
 
----
 
-return前增加操作
-代码
+return前增加操作，修改代码如下：
+
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <stdio.h>
@@ -183,36 +178,57 @@ int main()
     return 0;
 }
 
-可得
-图片
+多次运行可得相同结果。
 <img width="880" height="201" alt="image" src="https://github.com/user-attachments/assets/2bb70819-7433-43b9-929d-4b2aaca9595b" />
 
-**分析：**  
-每个进程独立执行 `g *= 2`，父子进程的结果互不影响。  
-- 子进程：`(10+5)*2=30`  
-- 父进程：`(10-5)*2=10`
-
----
+分析：每个进程独立执行g *= 2，父子进程的结果互不影响。子进程：(10+5)*2=30，父进程：(10-5)*2=10。
 
 ### 1.1.3调用外部程序
 
-编写被调用程序：
-代码：
+编写被调用程序代码：
 #include <stdio.h>
 #include <unistd.h>
 
 int main()
 {
-    printf("system_call PID: %d, Student ID:2233514228\n", getpid());
+    printf("system_call PID: %d, 我的学号:2233514228\n", getpid());
     return 0;
 }
 
 运行：
 <img width="878" height="90" alt="image" src="https://github.com/user-attachments/assets/12274c08-0bdf-4bc1-b524-22297ba0b680" />
-不支持中文输出：我的学号，出现乱码。
+不支持中文输出：我的学号这几个字，出现乱码。
 
 两个程序和图片
 system：
+#include <sys/types.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <sys/wait.h>
+
+int main()
+{
+    pid_t pid;
+    printf("parent process PID: %d\n", getpid());
+
+    pid = fork();
+
+    if (pid < 0) {
+        fprintf(stderr, "Fork Failed\n");
+        return 1;
+    }
+    else if (pid == 0) {
+        printf("child process PID: %d\n", getpid());
+        system("./system_call");
+    }
+    else {
+        wait(NULL);
+        printf("child process finished. parent PID: %d\n", getpid());
+    }
+
+    return 0;
+}
 <img width="855" height="200" alt="image" src="https://github.com/user-attachments/assets/93637897-dd5c-4f84-a2e0-694a15cd1eb0" />
 
 
@@ -220,38 +236,116 @@ system：
 
 
 exec：
+#include <sys/types.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <sys/wait.h>
+
+int main()
+{
+    pid_t pid;
+    printf("parent process PID: %d\n", getpid());
+
+    pid = fork();
+
+    if (pid < 0) {
+        fprintf(stderr, "Fork Failed\n");
+        return 1;
+    }
+    else if (pid == 0) {
+        printf("child process PID: %d\n", getpid());
+        execl("./system_call", "system_call", NULL);
+        perror("execl failed"); 
+    }
+    else {
+        wait(NULL);
+        printf("child process finished. parent PID: %d\n", getpid());
+    }
+
+    return 0;
+}
 <img width="665" height="179" alt="image" src="https://github.com/user-attachments/assets/09206440-12c2-41df-875d-4359e2737c30" />
 
 
 
-分析结果。
+分析结果：调用system后外部程序中的pid比子进程pid 大1，而调用execl后外部程序中的pid与子进程相同。这是为什么：使用 system() 时：
 
-1.2线程实验
+子进程再生成一个新进程来运行外部命令；
+
+system_call 是孙进程；
+
+system_call 的 PID 与子进程不同，父 PID 为子进程。
+
+使用 exec() 时：
+
+子进程被替换为新程序；
+
+system_call 与子进程共用同一个 PID；
+
+system_call 的父进程为原父进程。
+
+## 1.2线程实验
 开始时，设计程序，创建两个子线程，两线程分别对同一个共享变量多次操作，观察输出结果。
-选择次数6000
+#include <stdio.h>
+#include <pthread.h>
+#include <unistd.h>
+
+int count = 0;  // 共享变量
+
+void* thread_inc(void* arg) {  // 线程1：自增
+    long tid = (long)pthread_self();
+    printf("Thread %ld started\n", tid);
+    for (int i = 0; i < 6000; i++) {
+        count++;  // 加1操作
+    }
+    printf("Thread %ld finished. Current count = %d\n", tid, count);
+    return NULL;
+}
+
+void* thread_dec(void* arg) {  // 线程2：自减
+    long tid = (long)pthread_self();
+    printf("Thread %ld started\n", tid);
+    for (int i = 0; i < 6000; i++) {
+        count--;  // 减1操作
+    }
+    printf("Thread %ld finished. Current count = %d\n", tid, count);
+    return NULL;
+}
+
+int main() {
+    pthread_t t1, t2;
+
+    printf("Main process PID = %d, initial count = %d\n", getpid(), count);
+
+    pthread_create(&t1, NULL, thread_inc, NULL);
+    printf("Thread 1 created (TID = %ld)\n", (long)t1);
+
+    pthread_create(&t2, NULL, thread_dec, NULL);
+    printf("Thread 2 created (TID = %ld)\n", (long)t2);
+
+    pthread_join(t1, NULL);
+    pthread_join(t2, NULL);
+
+    printf("process finished, final count = %d\n", count);
+
+    return 0;
+}
+
+选择次数6000，理论上输出应该是0。
 加锁or not？？？尝试
 运行十余次，出现了多次现象，如图所示
 
+<img width="760" height="504" alt="image" src="https://github.com/user-attachments/assets/529ada1d-1b4a-4516-b6ac-6dcb5e52bbf4" />
+<img width="797" height="506" alt="image" src="https://github.com/user-attachments/assets/97cdf279-342d-45c5-a901-87ce234c0cc5" />
+<img width="777" height="504" alt="image" src="https://github.com/user-attachments/assets/b8c4152b-1e62-4760-8c1e-ba5408894a24" />
+<img width="780" height="507" alt="image" src="https://github.com/user-attachments/assets/367d3614-05df-4d28-8cd9-9aa915ec3afc" />
 
+我感觉在没有同步机制的情况下，两线程对同一个共享变量进行修改时，结果应该是不确定的，而且几乎不可能完全等于理论值0。
 
-4图
-
-是的 ✅ ——你这个判断非常到位。
-
-从**理论上讲**，在没有同步机制（锁、原子操作等）的情况下，两线程对同一个共享变量进行修改时，**结果应该是不确定的**，而且**几乎不可能完全等于理论值**（12000）。
-
-但是在**现实运行中（尤其是循环较少，比如6000次）**，往往会出现一种“假象”——你运行了几次，结果反而一直是12000。
+查阅资料得知，现实运行中（尤其是循环较少，比如6000次），往往会出现一种“假象”——你运行了几次，结果反而一直是0。
 这其实是因为：
-
----
-
-### 🧩 一、现代系统下“偶然正确”的原因
-
-1. **线程创建与调度延迟**
-   两个线程虽然几乎同时创建，但调度器往往会让一个线程先执行完大部分循环，再切换到另一个线程。
-   → 也就是“伪并行”，顺序执行，所以结果没错。
-
-2. **循环次数太少**
+循环次数太少**
    6000次在现代 CPU 上只需要几微秒完成。
    调度切换（线程间切换）往往需要上万微秒级别，线程可能还没被切换就已经跑完了。
 
@@ -259,53 +353,41 @@ exec：
    若此时 CPU 空闲，操作系统就不会频繁打断线程调度。
    两个线程各跑完一半，就好像是顺序执行一样。
 
----
 
-### ⚙️ 二、结论
+所以主观上应该不太可能完全等于理论值**”是正确的，
 
-所以你说的“**主观上应该不太可能完全等于理论值**”是正确的，
-但在现实中——**由于系统调度特性**，
-**小循环 + 空闲CPU → 实际上经常出现理论值**。
 
----
-
-### 🔬 想亲眼看到竞争？
-
-你可以这样改：
-
-```c
-for (int i = 0; i < 6000; i++) {
-    int temp = count;
-    usleep(1);  // 故意延迟1微秒，让调度有机会切换
-    count = temp + 1;
-}
-```
-
-这样几乎一定不会得到12000。
-
----
-
-要不要我帮你解释下 **加上 `usleep(1)` 后为什么几乎必定错**？这能更直观理解竞争条件的本质。
 
 增加操作数☞60000
-代码
+<img width="882" height="787" alt="image" src="https://github.com/user-attachments/assets/dcab8922-6c62-4712-a117-2b1b9295d045" />
+<img width="797" height="762" alt="image" src="https://github.com/user-attachments/assets/1ef04413-f515-419c-9dee-ca6c4cdeecc5" />
+<img width="825" height="757" alt="image" src="https://github.com/user-attachments/assets/4c2a1d75-0231-4588-bfe8-c23b60b8f19b" />
+<img width="790" height="256" alt="image" src="https://github.com/user-attachments/assets/4f9ffc9f-e8a2-4f92-afc1-1f5336685f35" />
+
 4图，此时次次输出均与理论值不符。分析：
 
 ；增加信号量和pv操作，再次运行10次结果如下
 图3*
+<img width="867" height="617" alt="image" src="https://github.com/user-attachments/assets/145e5e03-9a28-4b25-acd4-7fe4bd9107cc" />
+<img width="867" height="591" alt="image" src="https://github.com/user-attachments/assets/6c3d761f-7069-41d2-9adf-1809a9437688" />
+<img width="867" height="783" alt="image" src="https://github.com/user-attachments/assets/fdf9a9e6-6a39-4051-a58b-b27c002dba45" />
 
-3 ## 可得输出稳定为0
-；使用互斥锁。
+虽然过程中count变化不定，但最终可得输出稳定为0
+；
+使用互斥锁。
 
 
 尝试灵活运用信号量和PV 操作实现线程间的同步互斥。？？？？？？？？？？？？？？？？？？？
 综合运用，2张图
+<img width="874" height="876" alt="image" src="https://github.com/user-attachments/assets/eeee8ad1-6900-4475-82b6-997a97982429" />
+<img width="738" height="844" alt="image" src="https://github.com/user-attachments/assets/3eb482cd-d3b9-4c9f-9532-89815eb794b4" />
+
 分析pid关系
 
-2种方法系统调用
-ok
+2种方法调用
 由于之前编写system_call.c时在代码中使用中文。而终端中输出似乎并不支持，于是修改代码，再次运行如下：
 sys改png
+<img width="847" height="89" alt="image" src="https://github.com/user-attachments/assets/d1113153-e29a-46c9-8b32-935661587fc4" />
 
 修改完代码，编写程序，在进程中创建两个线程，分别使用两个函数方法进行系统调用
 ①system()
@@ -314,19 +396,22 @@ sys改png
 
 
 结果：
-systhread
+<img width="696" height="762" alt="image" src="https://github.com/user-attachments/assets/456ace5b-e57c-4a87-9218-c9fc15065994" />
+<img width="697" height="763" alt="image" src="https://github.com/user-attachments/assets/985b3aa9-3b55-4aee-8def-09a8e38029ee" />
+
 
 
 ②:exec
 代码：
 
 结果：
+<img width="879" height="789" alt="image" src="https://github.com/user-attachments/assets/7b54b8be-6395-42fa-86d5-72b2d4f44d01" />
+<img width="735" height="756" alt="image" src="https://github.com/user-attachments/assets/9bd4f1a2-7428-4897-8acc-f849291af28e" />
 
-图片
 
 
 
-1.3自旋锁实验
+## 1.3自旋锁实验
 补全代码如下：
 /**
 * spinlock.c
@@ -399,28 +484,16 @@ int main() {
 }
 
 结果如图所示：
+<img width="902" height="450" alt="image" src="https://github.com/user-attachments/assets/4ce9658f-45e4-4750-85e0-d35a5dfa6423" />
 
 无论运行多少次，输出几乎总是一样：
-
-makefile
-复制代码
 Before: shared_value = 0
 After: shared_value = 10000
 
-尝试一下如果去掉如果去掉自旋锁
+尝试一下如果去掉如果去掉自旋锁?
 
 
 
-非常好 👍 我来帮你完整、系统地分析一下这个 **自旋锁版本程序的运行结果与执行过程**。
-我们会从线程行为、锁机制、性能特征、以及实验现象四个角度来讲，形成一份标准化的实验分析。
-
----
-
-## 🧩 一、程序执行流程概述
-
-运行过程大体分为以下几个阶段：
-
-1. **初始化阶段**
 
    * 主线程调用 `spinlock_init(&lock)`，将 `lock.flag` 置为 `0`，表示锁处于未占用状态。
    * 初始化共享变量 `shared_value = 0`。
@@ -469,99 +542,11 @@ After: shared_value = 10000
 
 ---
 
-## 🔒 二、自旋锁运行机制分析
 
-| 步骤                       | 状态变化            | 说明              |
-| ------------------------ | --------------- | --------------- |
-| 线程 A 尝试加锁                | flag = 0 → 1    | 成功进入临界区         |
-| 线程 B 同时加锁                | flag = 1（锁已被占用） | B 进入自旋等待状态      |
-| 线程 A 执行 `shared_value++` | 受保护，不被打断        | 保证原子性           |
-| 线程 A 释放锁                 | flag = 1 → 0    | B 可继续执行         |
-| 线程 B 获得锁                 | flag = 0 → 1    | B 进入临界区         |
-| 重复此过程 5000 次 × 2 线程      | ——              | 最终共享变量稳定为 10000 |
 
----
 
-## 📈 三、实验运行结果与分析
 
-多次运行的输出示例（结果一致）：
-
-```
-Before: shared_value = 0
-After: shared_value = 10000
-```
-
-### 1. **结果正确性**
-
-* 结果稳定且始终等于 `5000 × 2 = 10000`。
-* 表明自旋锁有效地保证了共享变量访问的**互斥性**（mutual exclusion）。
-
-### 2. **线程调度特征**
-
-* 两个线程不断争夺锁的控制权。
-* 在某一时刻，只有一个线程能修改 `shared_value`。
-* 自旋期间线程不会睡眠，而是**忙等待**（busy-waiting）。
-
-### 3. **性能特点**
-
-* 自旋锁的优势在于：
-
-  * 锁持有时间短时，忙等待比上下文切换更高效。
-  * 不涉及系统调用，不会进入内核态。
-* 缺点在于：
-
-  * 若锁竞争严重或锁持有时间较长，会浪费 CPU 时间在循环等待中。
-  * 在单核 CPU 上特别低效，因为等待线程无法真正并行。
-
-### 4. **线程交替行为（逻辑示意）**
-
-| 时间片 | 线程       | 操作              | 共享变量值 |
-| --- | -------- | --------------- | ----- |
-| t1  | Thread A | 获取锁 → 加 1 → 释放锁 | 1     |
-| t2  | Thread B | 获取锁 → 加 1 → 释放锁 | 2     |
-| t3  | Thread A | 加 1             | 3     |
-| …   | …        | …               | …     |
-| 最后  | Thread B | 加到 10000        | 10000 |
-
----
-
-## 🧠 四、实验结论总结
-
-1. **功能正确性：**
-   使用自旋锁后，两个线程对共享变量的访问变为互斥，完全消除了数据竞争。
-
-2. **执行结果：**
-   程序每次运行结果一致：
-
-   ```
-   After: shared_value = 10000
-   ```
-
-3. **机制优势：**
-
-   * 锁操作开销小；
-   * 不涉及线程睡眠/唤醒；
-   * 适合短期、低延迟的临界区。
-
-4. **机制劣势：**
-
-   * 会占用 CPU 忙等待；
-   * 若锁持有时间较长，会显著降低并发效率；
-   * 在单核系统中，等待线程无法获得执行机会。
-
----
-
-## 🧩 五、延伸思考
-
-| 锁类型                 | 等待方式 | 优点       | 缺点       | 典型场景     |
-| ------------------- | ---- | -------- | -------- | -------- |
-| **自旋锁 (spinlock)**  | 忙等待  | 快速响应、低延迟 | 占 CPU    | 短临界区、高并发 |
-| **互斥锁 (mutex)**     | 阻塞等待 | 不浪费 CPU  | 上下文切换开销大 | 临界区耗时较长  |
-| **信号量 (semaphore)** | 计数控制 | 可控制资源数量  | 实现复杂     | 资源池管理    |
-
----
-
-是否希望我帮你把这份分析整理成实验报告格式（包括**实验目的、原理、结果、结论**四个标准部分）？那样可以直接放进实验文档里用。
+。
 
 
 
