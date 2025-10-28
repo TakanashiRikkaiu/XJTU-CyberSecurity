@@ -385,14 +385,15 @@ int main() {
 加锁or not？？？尝试
 运行十余次，出现了多次现象，如图所示
 <div align="center">
-<img width="665" height="179" alt="image" src="https://github.com/user-attachments/assets/09206440-12c2-41df-875d-4359e2737c30" />
 <img width="760" height="504" alt="image" src="https://github.com/user-attachments/assets/529ada1d-1b4a-4516-b6ac-6dcb5e52bbf4" />
 <img width="797" height="506" alt="image" src="https://github.com/user-attachments/assets/97cdf279-342d-45c5-a901-87ce234c0cc5" />
 <img width="777" height="504" alt="image" src="https://github.com/user-attachments/assets/b8c4152b-1e62-4760-8c1e-ba5408894a24" />
 <img width="780" height="507" alt="image" src="https://github.com/user-attachments/assets/367d3614-05df-4d28-8cd9-9aa915ec3afc" />
 </div>
-其实输出还是有不少0的，偶尔出现其他数字。但我感觉在没有同步机制的情况下，两线程对同一个共享变量进行修改时，结果应该是不确定的，而且几乎不可能完全等于理论值0。
-查阅资料得知，现实运行中（尤其是循环较少，比如6000次），往往会出现一种“假象”——运行了多次，结果反而一直是0。
+其实输出还是有不少0的，偶尔出现其他数字。但我感觉在没有同步机制的情况下，两线程对同一个共享变量进行修改时，结果应该是不确定的，而且几乎不可能完全等于理论值0。  
+
+查阅资料得知，现实运行中（尤其是循环较少，比如6000次），往往会出现一种“假象”——运行了多次，结果反而一直是0。  
+
 这其实是因为循环次数太少，6000次在现代 CPU 上只需要几微秒完成。调度切换（线程间切换）往往需要上万微秒级别，线程可能还没被切换就已经跑完了。  
 
 增加操作数☞60000，程序thread0
@@ -403,59 +404,131 @@ int main() {
 <img width="790" height="256" alt="image" src="https://github.com/user-attachments/assets/4f9ffc9f-e8a2-4f92-afc1-1f5336685f35" />
 </div>
 4张图，此时次次输出均与理论值不符。说明出现线程共享资源时的竞争现象。  
-分析：count++与count--都不是原子操作，会分为读、修改、写三个步骤，当两个线程几乎同时访问时，会出现“读到旧值 → 改错 → 覆盖”的情况，所以最终结果通常不是 0，而是一个随机波动的小整数。  
+分析：count++与count--都不是原子操作，会分为读、修改、写三个步骤，当两个线程几乎同时访问时，会出现“读到旧值 → 改错 → 覆盖”的情况，所以最终结果通常不是 0，而是一个随机波动的小整数。    
 
-因此需要信号量或互斥锁实现互斥访问，就能让最终结果稳定为0  
-①thread1 增加信号量和pv操作，再次运行10次结果如下
+因此需要信号量或互斥锁实现互斥访问，就能让最终结果稳定为0    
+①thread1 增加信号量和pv操作，再次运行10次结果如下  
 <div align="center">
 <img width="867" height="617" alt="image" src="https://github.com/user-attachments/assets/145e5e03-9a28-4b25-acd4-7fe4bd9107cc" />
 <img width="867" height="591" alt="image" src="https://github.com/user-attachments/assets/6c3d761f-7069-41d2-9adf-1809a9437688" />
 <img width="867" height="783" alt="image" src="https://github.com/user-attachments/assets/fdf9a9e6-6a39-4051-a58b-b27c002dba45" />
 </div>
 虽然过程中count变化不定，但最终可得输出稳定为0  
+分析：代码创建了两个线程：一个负责递增，另一个负责递减。每个线程执行60000次操作，最终count的值应该为0。  
+代码使用信号量防止两个线程同时修改共享变量count，从而避免数据竞争导致的错误结果，如果没有信号量，count 最终可能不是 0。  
 
 ②thread2 使用互斥锁。  
 <div align="center">
 <img width="881" height="627" alt="image" src="https://github.com/user-attachments/assets/1fadaef7-a40f-4719-9222-65dffbe65d24" />
 </div>
+同上
+分析：使用POSIX线程互斥锁来保护共享变量count的访问。  
+二者效果相同  
 
-尝试灵活运用信号量和PV 操作实现线程间的同步互斥。？？？？？？？？？？？？？？？？？？？
-综合运用，2张图
+尝试灵活运用信号量和PV操作实现线程间的同步互斥。？？？？？？？？？？？？？？？？？？？不太会，求助博客和ai
+综合运用，2张图，thread3  
 <div align="center">
 <img width="874" height="876" alt="image" src="https://github.com/user-attachments/assets/eeee8ad1-6900-4475-82b6-997a97982429" />
 <img width="738" height="844" alt="image" src="https://github.com/user-attachments/assets/3eb482cd-d3b9-4c9f-9532-89815eb794b4" />
 </div>
-分析pid关系
+分析pid关系  
+
 
 2种方法调用
 由于之前编写system_call.c时在代码中使用中文。而终端中输出似乎并不支持，于是修改代码，再次运行如下：
-sys改png
+sys改png  
+运行修改过的程序  
+<div align="center">
 <img width="847" height="89" alt="image" src="https://github.com/user-attachments/assets/d1113153-e29a-46c9-8b32-935661587fc4" />
-
-修改完代码，编写程序，在进程中创建两个线程，分别使用两个函数方法进行系统调用
+</div>  
+修改完代码，编写程序，在进程中创建两个线程，分别使用两个函数方法进行调用
 ①system()
 代码：
 
+```
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+#include <unistd.h>
 
+void* thread_call(void* arg) {
+    long id = (long)arg;
+    printf("thread%ld created\n", id);
+    printf("thread%ld tid = %ld ,pid = %d\n", id, pthread_self(), getpid());
+    system("./system_call");
+    printf("thread%ld systemcall return\n", id);
+    return NULL;
+}
 
-结果：
+int main() {
+    pthread_t t1, t2;
+    pthread_create(&t1, NULL, thread_call, (void*)1);
+    pthread_create(&t2, NULL, thread_call, (void*)2);
+    pthread_join(t1, NULL);
+    pthread_join(t2, NULL);
+    return 0;
+}
+```
+
+结果：  
+<div align="center">
 <img width="696" height="762" alt="image" src="https://github.com/user-attachments/assets/456ace5b-e57c-4a87-9218-c9fc15065994" />
 <img width="697" height="763" alt="image" src="https://github.com/user-attachments/assets/985b3aa9-3b55-4aee-8def-09a8e38029ee" />
-
+</div>  
+分析：
 
 
 ②:exec
 代码：
 
-结果：
+```
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+#include <unistd.h>
+#include <sys/wait.h>
+
+void* thread_call(void* arg) {
+    long id = (long)arg;
+    printf("thread%ld created\n", id);
+    printf("thread%ld tid = %ld ,pid = %d\n", id, pthread_self(), getpid());
+
+    pid_t pid = fork();
+    if (pid == 0) {
+        execl("./system_call", "system_call", NULL);
+        perror("execl failed");
+        exit(1);
+    } else {
+        wait(NULL);
+        printf("thread%ld systemcall return\n", id);
+    }
+    return NULL;
+}
+
+int main() {
+    pthread_t t1, t2;
+    pthread_create(&t1, NULL, thread_call, (void*)1);
+    pthread_create(&t2, NULL, thread_call, (void*)2);
+    pthread_join(t1, NULL);
+    pthread_join(t2, NULL);
+    return 0;
+}
+
+```
+
+结果：  
+<div align="center">
 <img width="879" height="789" alt="image" src="https://github.com/user-attachments/assets/7b54b8be-6395-42fa-86d5-72b2d4f44d01" />
 <img width="735" height="756" alt="image" src="https://github.com/user-attachments/assets/9bd4f1a2-7428-4897-8acc-f849291af28e" />
-
+</div>  
+分析：
 
 
 
 ## 1.3自旋锁实验
 补全代码如下：
+
+```
 /**
 * spinlock.c
 * in xjtu
@@ -525,65 +598,29 @@ int main() {
 
     return 0;
 }
+```
 
-结果如图所示：
+结果如图所示：  
+<div align="center">
 <img width="902" height="450" alt="image" src="https://github.com/user-attachments/assets/4ce9658f-45e4-4750-85e0-d35a5dfa6423" />
+</div>  
 
 无论运行多少次，输出几乎总是一样：
 Before: shared_value = 0
-After: shared_value = 10000
+After: shared_value = 10000  
 
-尝试一下如果去掉如果去掉自旋锁?
+使用pthreads库实现多线程，并通过原子操作内置函数__sync_lock_test_and_set和__sync_lock_release实现自旋锁。  
+尝试一下如果去掉如果去掉自旋锁?  
+如果去掉 spinlock_lock/unlock，shared_value++ 不是原子操作（读-改-写三个步骤），两个线程可能同时读到相同值，导致最终值 < 10000
 
 
 
 
-   * 主线程调用 `spinlock_init(&lock)`，将 `lock.flag` 置为 `0`，表示锁处于未占用状态。
-   * 初始化共享变量 `shared_value = 0`。
-   * 输出初始值：
 
-     ```
-     Before: shared_value = 0
-     ```
 
-2. **线程创建阶段**
 
-   * 主线程使用 `pthread_create()` 创建两个线程：`thread1` 和 `thread2`。
-   * 两个线程开始并发执行 `thread_function()`，共用同一个自旋锁 `lock`。
 
-3. **线程执行阶段**
-
-   * 每个线程内部执行循环 `for (int i = 0; i < 5000; ++i)`：
-
-     * 调用 `spinlock_lock(&lock)` 尝试加锁；
-     * 获得锁后执行 `shared_value++`；
-     * 执行完毕后调用 `spinlock_unlock(&lock)` 释放锁；
-     * 再进入下一轮循环。
-
-   由于自旋锁是通过原子操作实现的：
-
-   ```c
-   while (__sync_lock_test_and_set(&lock->flag, 1)) {
-       // busy-wait
-   }
-   ```
-
-   只有一个线程能成功把 `flag` 从 `0 → 1`，另一线程若看到 `flag == 1`，则在循环中忙等待直到其变为 0。
-
-4. **线程结束阶段**
-
-   * 每个线程执行完 5000 次加 1 后返回。
-   * 主线程使用 `pthread_join()` 等待两个线程都结束。
-
-5. **结果输出阶段**
-
-   * 最终输出：
-
-     ```
-     After: shared_value = 10000
-     ```
-
----
+ 
 
 
 
