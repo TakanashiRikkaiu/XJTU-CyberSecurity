@@ -100,7 +100,8 @@ int main()
 子进程的 pid1 = getpid() = 子进程的实际 PID。
 父进程的 pid = fork() 返回值 = 子进程的 PID。
 因此，二者相等，这是因为父进程通过这个值来“引用”子进程。
-关于父进程中pid与pid1插值为1的关系，查询得到的解释是父PID通常比子PID小，但不一定是正好相差1。
+关于父进程中pid与pid1插值为1的关系，查询得到的解释是父PID通常比子PID小，但不一定是正好相差1。  
+
 至于前后两次间的pid关系，我的理解是：每次运行程序会创建2个新进程，所以 PID 总是递增两个；但是若中间有系统进程插入，可能会略有跳变，比如这个3，但整体仍是递增的。    
 [参考资料：进程标识与进程创建（pid, fork）](https://blog.csdn.net/daaikuaichuan/article/details/82779011)      
 去除wait后运行：
@@ -108,16 +109,21 @@ int main()
 <img width="1476" height="282" alt="image" src="https://github.com/user-attachments/assets/9c1ab1ef-8303-4083-8cb5-979be170ef3e" />
 </br>去除wait函数的结果
 </div>
-pid内容关系类似上面的，但是输出顺序发生变化。对比以上两种情况发现，wait存在时，原本的程序输出都是子进程先于父进程，但在去掉wait函数后，父、子进程的输出先后次序就不一定了。    
+pid内容关系类似上面的，但是输出顺序发生变化。对比以上两种情况发现，wait存在时，原本的程序输出都是子进程先于父进程，但在去掉wait函数后，父、子进程的输出先后次序就不一定了。  
+
 分析：有wait()时，父进程会执行到wait(NULL)，这条语句会让父进程暂停执行，直到子进程结束。所以，子进程几乎总是先完成输出，父进程最后打印、最后退出，输出顺序比较稳定。    
-     去掉wait()后，父进程不再等待子进程，它们并发执行，结果就会有前面说的3种可能。同时父进程可能先退出，导致出现孤儿进程。    
-而一开始wait存在时却交替输出就是因为printf缓冲区有换行符才会刷新缓冲区，将缓冲区中的内容显示出来。
-按照此逻辑，如果使用了wait且包含了头文件，应该是成功调用函数，父等子结束。  
+     去掉wait()后，父进程不再等待子进程，它们并发执行，结果就会有前面说的3种可能。同时父进程可能先退出，导致出现孤儿进程。      
+
+而一开始wait存在时却交替输出就是因为printf缓冲区有换行符才会刷新缓冲区，将缓冲区中的内容显示出来。  
+
+按照此逻辑，如果使用了wait且包含了头文件，应该是成功调用函数，父等子结束。    
+
 尝试了一下把wait放到父进程输出语句之前，运行代码：  
 <div align="center">
-pid2
+<img width="1461" height="345" alt="image" src="https://github.com/user-attachments/assets/771e270f-3877-438c-b66b-1521e0ada711" />
 </div>  
 这次输出顺序均为子先，父后。  
+
 分析：查阅资料，wait()的作用是让父进程等待子进程结束并回收资源；<sys/wait.h>的作用是声明wait()函数，让编译器能正确检查参数与返回类型。不写wait()只是让系统自己回收资源，但会导致输出乱序和孤儿进程。
 
 ### 1.1.2全局变量
@@ -169,13 +175,13 @@ int main()
 > 注意从父进程继承来的是虚拟地址空间，同时也复制了页表（没有复制物理块）。  
 > 因此，此时父子进程拥有相同的虚拟地址，映射的物理内存也是一致的（独立的虚拟地址空间，共享父进程的物理内存）。
 
-一篇文章说：  
+还有一篇文章说：  
 父子进程打印出来的全局变量地址一样，原因在于这个地址是虚拟地址，  
 而因为子进程的创建是复制了父进程的虚拟地址空间的，  
 所以这两个变量的虚拟地址也是一样的。  
 （我们打印变量的地址都是虚拟地址，物理内存地址是不能够直接访问的）
 
-**二者物理地址不同。**
+**二者物理地址不同。**：这是因为 Linux 使用写时复制（Copy-on-Write）机制。子进程刚创建时与父进程共享物理页，但当任一方对变量 g 修改时，会触发页复制，二者即拥有独立的物理页。
 
 **分析：**  
 父子进程各自维护一份独立的变量，fork()发生时，变量 g 的值被复制到子进程中。  
@@ -246,8 +252,11 @@ int main()
 </div>  
 不支持中文输出：我的学号 这几个字，出现乱码。
 解决：配置中文环境失败，好像是程序编码格式问题，于是改中文为英文：    
+<div align="center">
+ <img width="847" height="89" alt="image" src="https://github.com/user-attachments/assets/dd166ecd-ef7e-4dd1-9183-a3d45754cc78" />
+<br>sys改  
+</div>  
 
-sys改  
 两个程序和图片  
 system：
 
@@ -381,9 +390,11 @@ int main() {
 }
 ```
 
-选择次数6000，如果二者独立，理论上输出应该是0。
-加锁or not？？？尝试
-运行十余次，出现了多次现象，如图所示
+选择次数6000，如果二者独立，理论上输出应该是0。  
+
+加锁or not？？？尝试    
+
+运行十余次，出现了多次现象，如图所示  
 <div align="center">
 <img width="760" height="504" alt="image" src="https://github.com/user-attachments/assets/529ada1d-1b4a-4516-b6ac-6dcb5e52bbf4" />
 <img width="797" height="506" alt="image" src="https://github.com/user-attachments/assets/97cdf279-342d-45c5-a901-87ce234c0cc5" />
@@ -406,7 +417,8 @@ int main() {
 4张图，此时次次输出均与理论值不符。说明出现线程共享资源时的竞争现象。  
 分析：count++与count--都不是原子操作，会分为读、修改、写三个步骤，当两个线程几乎同时访问时，会出现“读到旧值 → 改错 → 覆盖”的情况，所以最终结果通常不是 0，而是一个随机波动的小整数。    
 
-因此需要信号量或互斥锁实现互斥访问，就能让最终结果稳定为0    
+因此需要信号量或互斥锁实现互斥访问，就能让最终结果稳定为0 :  
+
 ①thread1 增加信号量和pv操作，再次运行10次结果如下  
 <div align="center">
 <img width="867" height="617" alt="image" src="https://github.com/user-attachments/assets/145e5e03-9a28-4b25-acd4-7fe4bd9107cc" />
@@ -415,7 +427,9 @@ int main() {
 </div>
 虽然过程中count变化不定，但最终可得输出稳定为0  
 分析：代码创建了两个线程：一个负责递增，另一个负责递减。每个线程执行60000次操作，最终count的值应该为0。  
-代码使用信号量防止两个线程同时修改共享变量count，从而避免数据竞争导致的错误结果，如果没有信号量，count 最终可能不是 0。  
+代码使用信号量防止两个线程同时修改共享变量count，从而避免数据竞争导致的错误结果，如果没有信号量，count 最终可能不是 0。   
+
+
 
 ②thread2 使用互斥锁。  
 <div align="center">
@@ -423,7 +437,8 @@ int main() {
 </div>
 同上
 分析：使用POSIX线程互斥锁来保护共享变量count的访问。  
-二者效果相同  
+二者效果相同   
+信号量与互斥锁本质相同，都是为了实现临界区互斥访问。不同点是：信号量可用于线程同步或资源计数，而互斥锁只允许一个线程进入临界区  
 
 尝试灵活运用信号量和PV操作实现线程间的同步互斥。？？？？？？？？？？？？？？？？？？？不太会，求助博客和ai
 综合运用，2张图，thread3  
@@ -475,8 +490,11 @@ int main() {
 <img width="696" height="762" alt="image" src="https://github.com/user-attachments/assets/456ace5b-e57c-4a87-9218-c9fc15065994" />
 <img width="697" height="763" alt="image" src="https://github.com/user-attachments/assets/985b3aa9-3b55-4aee-8def-09a8e38029ee" />
 </div>  
-分析：
-
+分析：  
+每个线程分别执行 system("./system_call")，即在各自线程中创建新的子进程执行外部程序。
+由于 system() 内部会调用 fork() + exec()，两个线程并行时可能交替执行外部命令，因此输出顺序不固定。
+两个 system_call 程序的 PID 不同，均为当前进程的子进程，父进程为运行这些线程的主进程。
+线程 PID 相同（共享进程 PID），而外部程序 PID 各自独立。
 
 ②:exec
 代码：
@@ -521,8 +539,11 @@ int main() {
 <img width="879" height="789" alt="image" src="https://github.com/user-attachments/assets/7b54b8be-6395-42fa-86d5-72b2d4f44d01" />
 <img width="735" height="756" alt="image" src="https://github.com/user-attachments/assets/9bd4f1a2-7428-4897-8acc-f849291af28e" />
 </div>  
-分析：
-
+分析：  
+每个线程分别执行 system("./system_call")，即在各自线程中创建新的子进程执行外部程序。
+由于 system() 内部会调用 fork() + exec()，两个线程并行时可能交替执行外部命令，因此输出顺序不固定。
+两个 system_call 程序的 PID 不同，均为当前进程的子进程，父进程为运行这些线程的主进程。
+线程 PID 相同（共享进程 PID），而外部程序 PID 各自独立。
 
 
 ## 1.3自旋锁实验
@@ -613,8 +634,9 @@ After: shared_value = 10000
 使用pthreads库实现多线程，并通过原子操作内置函数__sync_lock_test_and_set和__sync_lock_release实现自旋锁。  
 尝试一下如果去掉如果去掉自旋锁?  
 如果去掉 spinlock_lock/unlock，shared_value++ 不是原子操作（读-改-写三个步骤），两个线程可能同时读到相同值，导致最终值 < 10000
-
-
+<div align="center">
+<img width="847" height="786" alt="image" src="https://github.com/user-attachments/assets/096ba931-c836-4c90-b2ef-3bd3d76503a7" />
+</div>  
 
 
 
