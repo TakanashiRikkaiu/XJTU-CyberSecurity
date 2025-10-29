@@ -615,10 +615,16 @@ int main() {
 <img width="735" height="756" alt="image" src="https://github.com/user-attachments/assets/9bd4f1a2-7428-4897-8acc-f849291af28e" />
 </div>  
 分析：  
-每个线程分别执行 system("./system_call")，即在各自线程中创建新的子进程执行外部程序。
-由于 system() 内部会调用 fork() + exec()，两个线程并行时可能交替执行外部命令，因此输出顺序不固定。
-两个 system_call 程序的 PID 不同，均为当前进程的子进程，父进程为运行这些线程的主进程。
-线程 PID 相同（共享进程 PID），而外部程序 PID 各自独立。
+每个线程中再次执行 fork()，创建出独立子进程，再用 execl() 执行外部程序。
+因此每个线程都会派生出一个新的进程去执行 system_call。
+与 system() 不同的是，这里显式地进行了 fork() + exec()，可精确控制子进程的创建与回收。
+输出中可看到：
+
+thread 的 PID 相同
+
+system_call 的 PID 各自不同，为两个不同子进程
+
+每个线程在其子进程退出后再打印“return”，说明 wait(NULL) 成功等待。  
 
 
 ## 1.3自旋锁实验
