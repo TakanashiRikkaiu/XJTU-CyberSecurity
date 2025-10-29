@@ -1,4 +1,79 @@
-我是傻逼     makefile？是什么
+   makefile？是什么  
+```
+CC = gcc
+CFLAGS = -Wall -pthread
+
+# =====================
+# 所有要生成的可执行文件
+# =====================
+TARGETS = pid pid1 pid2 globalvalue globalvalue1 \
+           system_call system exec spinlock unlock \
+           thread thread0 thread1 thread2 thread3 thread4 thread5
+
+# 默认目标
+all: $(TARGETS)
+
+# =====================
+# 每个文件的编译规则
+# =====================
+pid: pid.c
+	$(CC) $(CFLAGS) -o $@ $<
+
+pid1: pid1.c
+	$(CC) $(CFLAGS) -o $@ $<
+
+pid2: pid2.c
+	$(CC) $(CFLAGS) -o $@ $<
+
+globalvalue: globalvalue.c
+	$(CC) $(CFLAGS) -o $@ $<
+
+globalvalue1: globalvalue1.c
+	$(CC) $(CFLAGS) -o $@ $<
+
+system_call: system_call.c
+	$(CC) $(CFLAGS) -o $@ $<
+
+system: system.c
+	$(CC) $(CFLAGS) -o $@ $<
+
+exec: exec.c
+	$(CC) $(CFLAGS) -o $@ $<
+
+spinlock: spinlock.c
+	$(CC) $(CFLAGS) -o $@ $<
+
+unlock: unlock.c
+	$(CC) $(CFLAGS) -o $@ $<
+
+thread: thread.c
+	$(CC) $(CFLAGS) -o $@ $<
+
+thread0: thread0.c
+	$(CC) $(CFLAGS) -o $@ $<
+
+thread1: thread1.c
+	$(CC) $(CFLAGS) -o $@ $<
+
+thread2: thread2.c
+	$(CC) $(CFLAGS) -o $@ $<
+
+thread3: thread3.c
+	$(CC) $(CFLAGS) -o $@ $<
+
+thread4: thread4.c
+	$(CC) $(CFLAGS) -o $@ $<
+
+thread5: thread5.c
+	$(CC) $(CFLAGS) -o $@ $<
+
+# =====================
+# 清理命令
+# =====================
+clean:
+	rm -f $(TARGETS)
+```
+   
 # 实验一     
 ## 1.1进程实验
 ### 1.1.1wait函数
