@@ -1,26 +1,36 @@
+# 实验2  
+## 2.1软中断  
+实验前准备，使用man命令查看各系统调用帮助手册  
+fork  
+<img width="1734" height="927" alt="image" src="https://github.com/user-attachments/assets/a4da7078-7686-46f0-b743-0ca029a401c8" />  
+kill  
+<img width="1734" height="927" alt="image" src="https://github.com/user-attachments/assets/717c32d9-5af0-48c3-b777-f3a7874c6b37" />  
+exit  
+<img width="1734" height="927" alt="image" src="https://github.com/user-attachments/assets/088bd6a8-ebf1-47dc-adbd-0287c7addddf" />  
+signal  
+<img width="1734" height="927" alt="image" src="https://github.com/user-attachments/assets/be9fbb4b-7c07-4c7c-9aa3-212e273662fd" />  
+sleep  
+<img width="1734" height="927" alt="image" src="https://github.com/user-attachments/assets/0e5b6588-5ac8-4382-843c-0d1afbc6b0b7" />  
 
+补全程序运行：  
+等待5s后    
+<img width="840" height="675" alt="image" src="https://github.com/user-attachments/assets/89c33b32-ebae-40b3-bac2-fd1995bd33a3" />  
+按下ctrl+c或\  
+<img width="859" height="680" alt="image" src="https://github.com/user-attachments/assets/3a60410f-367b-43a3-ad4d-0d0982318b6d" />  
+<img width="841" height="680" alt="image" src="https://github.com/user-attachments/assets/997ba255-a734-4668-9e93-68fad8452e86" />  
+输出顺序不固定
 
+改为闹钟中断  
+<img width="838" height="450" alt="image" src="https://github.com/user-attachments/assets/f58e3756-816e-441b-820c-f15c10a8f5d6" />  
+<img width="840" height="677" alt="image" src="https://github.com/user-attachments/assets/4eb4d4d0-5e25-4e0f-8d58-49cbc26b2dcd" />  
+没有明显区别
 
+## 2.2管道通信  
+有锁情况  
+<img width="1734" height="1095" alt="image" src="https://github.com/user-attachments/assets/31eb7464-c19b-4ed7-ab69-91d6079434ec" />    
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+去掉锁  
+<img width="1734" height="1095" alt="image" src="https://github.com/user-attachments/assets/e803ae5c-fca0-4917-9d91-65c7d8d32308" />  
 
 
 ## 2.3 内存分配  
