@@ -1,6 +1,7 @@
 # 实验2  
 ## 2.1软中断  
 实验前准备，使用man命令查看各系统调用帮助手册  
+问题：华为云貌似没有这个包，一开始一直显示查找不到这些指令，上网搜索在openeuler社区得到答案，安装对应包后解决。  
 fork  
 <img width="1734" height="927" alt="image" src="https://github.com/user-attachments/assets/a4da7078-7686-46f0-b743-0ca029a401c8" />  
 kill  
