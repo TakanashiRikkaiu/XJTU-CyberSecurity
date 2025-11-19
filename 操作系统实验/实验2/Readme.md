@@ -4,8 +4,8 @@
 问题：华为云貌似没有这个包，一开始一直显示查找不到这些指令，上网搜索在openeuler社区得到答案，安装man-pages包后解决。  
 fork  
 <img width="1734" height="927" alt="image" src="https://github.com/user-attachments/assets/a4da7078-7686-46f0-b743-0ca029a401c8" />  
-用于创建子进程，复制父进程状态，常用于多进程编程
-kill  
+用于创建子进程，复制父进程状态，常用于多进程编程  
+kill    
 <img width="1734" height="927" alt="image" src="https://github.com/user-attachments/assets/717c32d9-5af0-48c3-b777-f3a7874c6b37" />  
 int kill(pid_t pid, int sig);   pid：目标进程 ID ，sig：信号号。  
 成功：0，失败：-1    向进程发送信号，用于终止进程  
@@ -15,8 +15,8 @@ exit
 signal  
 <img width="1734" height="927" alt="image" src="https://github.com/user-attachments/assets/be9fbb4b-7c07-4c7c-9aa3-212e273662fd" />  
 signum：信号号 ，handler：处理函数指针  
-安装/修改信号处理器，处理中断信号
-sleep  
+安装/修改信号处理器，处理中断信号  
+sleep    
 <img width="1734" height="927" alt="image" src="https://github.com/user-attachments/assets/0e5b6588-5ac8-4382-843c-0d1afbc6b0b7" />  
 暂停当前进程指定秒数，常用于延迟执行或轮询  
 
@@ -104,18 +104,17 @@ int main() {
 
     return 0;
 }
-
 ```
 等待5s后    
 <img width="840" height="675" alt="image" src="https://github.com/user-attachments/assets/89c33b32-ebae-40b3-bac2-fd1995bd33a3" />  
-按下ctrl+c  
+`按下ctrl+c`:   
 <img width="859" height="680" alt="image" src="https://github.com/user-attachments/assets/3a60410f-367b-43a3-ad4d-0d0982318b6d" />  
-ctrl+\
+`ctrl+\`:  
 <img width="841" height="680" alt="image" src="https://github.com/user-attachments/assets/997ba255-a734-4668-9e93-68fad8452e86" />  
 输出顺序不固定  
 
 预期三种中断输出一致：子进程1先打印消息，子进程2次之，父进程最后         
-与猜测完全一致，多次运行输出稳定，子1通常先出，‘有时2先  
+与猜测完全一致，多次运行输出稳定，子1通常先出，有时2先  
 
 若等待 5s 超时→父进程收到 SIGALRM，随后给两个子进程发信号  
 若按下 Ctrl+C 或 Ctrl+\ → 父进程收到对应信号，同样发信号给子进程  
@@ -216,7 +215,6 @@ int main() {
 
     return 0;
 }
-
 ```
 同样等待5s  
 <img width="838" height="450" alt="image" src="https://github.com/user-attachments/assets/f58e3756-816e-441b-820c-f15c10a8f5d6" />  
@@ -370,10 +368,10 @@ read(fd[0]) 会阻塞，直到写端写入数据
 <img width="738" height="516" alt="image" src="https://github.com/user-attachments/assets/7283e51b-4318-4c0e-b3ac-41a8a18ad0fd" />  
 
 ①使用FF算法，连续分配大小为20，35，400，查看资源分配情况  
-<img width="738" height="316" alt="image" src="https://github.com/user-attachments/assets/6dc8bb80-758a-4584-a6c8-f947a94ab6e4" />  
-<img width="738" height="64" alt="image" src="https://github.com/user-attachments/assets/5ece683d-5303-429d-ad12-336bf2135cd3" />  
-
-释放进程2，观察  
+<img width="738" height="316" alt="image" src="https://github.com/user-attachments/assets/6dc8bb80-758a-4584-a6c8-f947a94ab6e4" />   
+释放进程2  
+<img width="738" height="64" alt="image" src="https://github.com/user-attachments/assets/5ece683d-5303-429d-ad12-336bf2135cd3" />    
+观察    
 <img width="738" height="360" alt="image" src="https://github.com/user-attachments/assets/f77bde1d-6776-48e4-8e5f-3b8a2850381a" />  
 
 发现空闲区被从前往后分割  
@@ -420,8 +418,12 @@ read(fd[0]) 会阻塞，直到写端写入数据
 ⑥分配100，200，150：  
 <img width="738" height="311" alt="image" src="https://github.com/user-attachments/assets/81cd32eb-144d-4415-b51d-10611878ad8d" />  
 
-杀死进程1，2，两块相邻空闲合并为一块  
+杀死进程1，2。这时发现两块相邻空闲区域合并为一块    
 <img width="738" height="294" alt="image" src="https://github.com/user-attachments/assets/db1b546d-32ba-43d6-b851-4a19b5308b0d" />  
+
+[程序](代码/allo.c)
+
+算法分析：  
 
 FF：地址递增链表，从首顺序查找，分割剩余。  
 BF：大小升序，选最小满足。  
@@ -432,7 +434,7 @@ WF：大小降序，选最大满足。
 思想：从链表头部开始顺序扫描，找到第一个大小满足进程请求的空闲分区，即从中分割所需大小的块分配给进程，剩余部分作为新空闲块保留在链表中。  
 优点：实现简单，分配速度快。  
 缺点：易产生外部碎片，低地址区碎片累积，高地址大块易被分割  
-适用：内存利用率中等，碎片管理需结合紧缩（。  
+适用：内存利用率中等，碎片管理需结合紧缩。  
 
 最佳适应算法  
 思想：空闲分区链表按大小由小到大排序。扫描链表，找到第一个满足进程请求大小的分区，从中分割分配，剩余作为新空闲块插入链表。  
@@ -440,7 +442,7 @@ WF：大小降序，选最大满足。
 缺点：需分配/回收时间开销大，易产生许多小碎片  
 适用：碎片敏感环境，但性能开销需优化  
 
-[程序](代码/allo.c)
+
 
 最差适应算法  
 思想：空闲分区链表按大小由大到小排序。扫描链表，找到第一个满足进程请求大小的分区，从中分割分配，剩余作为新空闲块插入链表。  
